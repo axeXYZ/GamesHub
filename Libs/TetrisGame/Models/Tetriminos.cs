@@ -1,8 +1,11 @@
-﻿namespace TetrisGame;
+﻿namespace TetrisGame.Models;
 
 public class Tetriminos
 {
-    public UInt16[,,] Z = new UInt16[2, 3, 3]{
+    //
+    // UInt16[nbRotations, hauteur, largeur]
+    //
+    public ushort[,,] Z = new ushort[2, 3, 3]{
         {// 0
             { 0, 0, 7 },
             { 0, 7, 7 },
@@ -14,7 +17,7 @@ public class Tetriminos
             { 0 ,0 ,0 }
         }
     };
-    public UInt16[,,] S = new UInt16[2, 3, 3]{
+    public ushort[,,] S = new ushort[2, 3, 3]{
         {// 0
             { 0, 6, 6 },
             { 6, 6, 0 },
@@ -26,7 +29,7 @@ public class Tetriminos
             { 0 ,0 ,6 }
         }
     };
-    public UInt16[,,] T = new UInt16[4, 3, 3]{
+    public ushort[,,] T = new ushort[4, 3, 3]{
         {// 0
             { 0, 5, 0 },
             { 5, 5, 5 },
@@ -48,13 +51,13 @@ public class Tetriminos
             { 0 ,5 ,0 }
         }
     };
-    public UInt16[,,] O = new UInt16[1, 2, 2]{
+    public ushort[,,] O = new ushort[1, 2, 2]{
         {// 0
             { 4, 4 },
             { 4, 4 }
         }
     };
-    public UInt16[,,] J = new UInt16[4, 3, 3]{
+    public ushort[,,] J = new ushort[4, 3, 3]{
         {// 0
             { 0, 3, 0 },
             { 0, 3, 0 },
@@ -76,7 +79,7 @@ public class Tetriminos
             { 0 ,0 ,3 }
         }
     };
-    public UInt16[,,] L = new UInt16[4, 3, 3]{
+    public ushort[,,] L = new ushort[4, 3, 3]{
         {// 0
             { 0, 2, 0 },
             { 0, 2, 0 },
@@ -98,7 +101,7 @@ public class Tetriminos
             { 0 ,0 ,2 }
         }
     };
-    public UInt16[,,] I = new UInt16[2, 4, 4]{
+    public ushort[,,] I = new ushort[2, 4, 4]{
         {// 0
             { 0, 0, 0, 0 },
             { 1, 1, 1, 1 },
@@ -112,4 +115,21 @@ public class Tetriminos
             { 0 ,1 ,0 ,0 }
         }
     };
+
+    public ushort[,,] GetRandomTetriminos()
+    {
+        int r = Random.Shared.Next(0, 7);
+        ushort[,,] tetriminos = r switch
+        {
+            0 => Z,
+            1 => S,
+            2 => T,
+            3 => O,
+            4 => J,
+            5 => L,
+            6 => I,
+            _ => Z
+        };
+        return tetriminos;
+    }
 }

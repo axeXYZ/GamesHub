@@ -98,9 +98,10 @@
 
 /* Plateau de jeu */
 .game-board {
+    position: relative; /* Important pour le positionnement absolu des enfants */
     /* Dimensions fixes */
-    width: 100%; /* Prend 400px de .game-area-column */
-    height: 100%; /* Prend 600px de .game-board-container */
+    width: 304px; /* Selon vos constantes */
+    height: 604px; /* Selon vos constantes */
 
     border: 2px solid black;
     background-color: #f0f0f0;
@@ -111,3 +112,103 @@
     background-image: linear-gradient(to right, #cccccc 1px, transparent 1px), linear-gradient(to bottom, #cccccc 1px, transparent 1px);
     background-size: var(--cell-width) var(--cell-height);
 }
+.game-cell {
+    /* Style de base pour toutes les cellules (même si pas rendu si vide) */
+    box-sizing: border-box; /* Inclure la bordure dans la taille */
+    position: absolute; /* Positionné par C# */
+}
+
+    .game-cell.filled {
+        border: 1px solid #555; /* Bordure pour les blocs pleins */
+        /* Peut-être une ombre légère ? */
+        /* box-shadow: inset 0 0 3px rgba(255,255,255,0.5); */
+    }
+
+    /* Couleurs (identiques à la preview pour l'instant) */
+    .game-cell.type-1 {
+        background-color: cyan;
+    }
+    /* I */
+    .game-cell.type-2 {
+        background-color: blue;
+    }
+    /* J */
+    .game-cell.type-3 {
+        background-color: orange;
+    }
+    /* L */
+    .game-cell.type-4 {
+        background-color: yellow;
+    }
+    /* O */
+    .game-cell.type-5 {
+        background-color: purple;
+    }
+    /* T */
+    .game-cell.type-6 {
+        background-color: lime;
+    }
+    /* S */
+    .game-cell.type-7 {
+        background-color: red;
+    }
+/* Z */
+
+.tetrimino-preview {
+    /* Style pour le conteneur de la preview */
+    line-height: 0; /* Pour éviter les espaces entre les divs de lignes */
+    border: 1px solid grey;
+    display: inline-block; /* Pour que le conteneur s'adapte à la taille */
+    margin-bottom: 10px;
+}
+
+.preview-row {
+    /* Pas besoin de style spécifique si on utilise line-height: 0 sur le parent */
+    height: 15px; /* Hauteur d'une cellule */
+}
+
+.preview-cell {
+    display: inline-block; /* Afficher les cellules en ligne */
+    width: 15px; /* Largeur d'une cellule */
+    height: 15px; /* Hauteur d'une cellule */
+    border: 1px solid #eee; /* Bordure légère pour voir les cellules vides */
+    box-sizing: border-box; /* Inclure la bordure dans la taille */
+}
+
+    .preview-cell.empty {
+        background-color: #f8f9fa; /* Couleur de fond pour les cellules vides */
+    }
+
+    .preview-cell.filled {
+        border: 1px solid #555; /* Bordure plus visible pour les cellules pleines */
+    }
+
+    /* Couleurs spécifiques par type de pièce (adaptez les valeurs 1-7) */
+    .preview-cell.type-1 {
+        background-color: cyan;
+    }
+    /* I */
+    .preview-cell.type-2 {
+        background-color: blue;
+    }
+    /* J */
+    .preview-cell.type-3 {
+        background-color: orange;
+    }
+    /* L */
+    .preview-cell.type-4 {
+        background-color: yellow;
+    }
+    /* O */
+    .preview-cell.type-5 {
+        background-color: purple;
+    }
+    /* T */
+    .preview-cell.type-6 {
+        background-color: lime;
+    }
+    /* S */
+    .preview-cell.type-7 {
+        background-color: red;
+    }
+/* Z */

@@ -16,7 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\GameLoop\GameLoop.csproj" />
+    <Folder Include="Services\" />
   </ItemGroup>
 
 </Project>
