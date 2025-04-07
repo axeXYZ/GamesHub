@@ -1,9 +1,11 @@
 ﻿@page "/tetris"
+@inject IGameLoopService GameLoop
+@implements IDisposable
 @using System.Globalization
 
 <h3>Jeu Tetris</h3>
 
- Remplacer "MonAppBlazor" par le nom réel de votre projet
+Remplacer "MonAppBlazor" par le nom réel de votre projet
 
 <div class="tetris-layout">
 
@@ -14,11 +16,11 @@
     <div class="info-column">
         <div class="score-zone">
             <span>Meilleur Score:</span>
-            <span class="score-value">@bestScore</span>
+            <span class="score-value">@_bestScore</span>
         </div>
         <div class="controls-zone">
-            <button class="start-button" @onclick="StartGame" disabled="@isGameRunning">
-                @(isGameRunning ? "En Cours..." : "Démarrer")
+            <button class="start-button" @onclick="StartGame" disabled="@_isGameRunning">
+                @(_isGameRunning ? "En Cours..." : "Démarrer")
             </button>
         </div>
         <div class="preview-zone">
@@ -46,6 +48,13 @@
 </div>
 
 @code {
+    // --- Paramètres pour la boucle de jeu ---
+    private double _timeSinceLastDrop = 0.0;
+    private const double TimeBetweenDrops = 0.8; // <- Temps spécifique à Tetris !
+
+    private double _timeSinceLastInputCheck = 0.0;
+    private const double InputCheckInterval = 0.05; // Vérifier input plus souvent
+
     // --- Paramètres pour la grille ---
     [Parameter] public int GridColumns { get; set; } = 10;
     [Parameter] public int GridRows { get; set; } = 20;
@@ -59,9 +68,9 @@
     private const double BoardHeightPx = 604.0;
 
     // --- Variables d'état du jeu ---
-    private int bestScore = 0; // Sera chargé/sauvé plus tard
-    private int currentScore = 0; // Score actuel (pas encore affiché, mais prêt)
-    private bool isGameRunning = false; // Pour l'état du bouton Start
+    private int _bestScore = 0; // Sera chargé/sauvé plus tard
+    private int _currentScore = 0; // Score actuel (pas encore affiché, mais prêt)
+    private bool _isGameRunning = false; // Pour l'état du bouton Start
 
     // --- Calcul pour le style de la grille en arrière-plan ---
     private string CellWidthString => (BoardWidthPx / GridColumns).ToString("0.##", CultureInfo.InvariantCulture) + "px";
@@ -72,23 +81,80 @@
     private string LeftMarginStyle => $"width: {LeftMarginWidth};";
     private string SpacerStyle => $"width: {SpacerWidth};";
 
-    // --- Méthodes du jeu ---
+    // --- Démarage du jeu ---
     private void StartGame()
     {
-        if (!isGameRunning)
+        if (!_isGameRunning)
         {
             Console.WriteLine("Démarrage du jeu !"); // Logique de démarrage à implémenter
-            isGameRunning = true;
-            currentScore = 0;
+            _isGameRunning = true;
+            _currentScore = 0;
             // Réinitialiser le plateau, générer la première pièce, etc.
             StateHasChanged(); // Notifie Blazor que l'état a changé (pour le bouton)
         }
     }
 
-    // Initialisation (par exemple, charger le meilleur score)
+    // --- Méthode pour gérer la logique de jeu ---
     protected override async Task OnInitializedAsync()
     {
-        // Ici, vous pourriez charger bestScore depuis le localStorage, par exemple
+        // Appel de la méthode de base pour l'initialisation
         await base.OnInitializedAsync();
+
+        // S'abonner à la boucle de jeu centrale
+        GameLoop.TickOccurred += HandleGameTick;
+        // S'assurer que le service a démarré la boucle JS (si ce n'est pas déjà fait)
+        await GameLoop.EnsureLoopStartedAsync();
+        Console.WriteLine("TetrisComponent: Initialized and subscribed to GameLoop.");
+
+    }
+
+    // --- Méthode de gestion des ticks de la boucle de jeu ---
+    private void HandleGameTick(double deltaTime)
+    {
+        if (_isGameRunning)
+        {
+            // --- Logique de Timing Spécifique à Tetris ---
+
+            // 1. Gestion de la descente de la pièce
+            _timeSinceLastDrop += deltaTime;
+            if (_timeSinceLastDrop >= TimeBetweenDrops)
+            {
+                // TO REMOVE
+                _bestScore++;
+                // TO REMOVE
+
+                _timeSinceLastDrop -= TimeBetweenDrops; // ou = 0 si on ne veut pas accumuler le retard/l'avance
+                // ---> FAIRE DESCENDRE LA PIECE <---
+                // Mettre à jour l'état, vérifier collision, etc.
+                // Console.WriteLine("Tetris Tick: Drop piece");
+                StateHasChanged(); // Demander un re-rendu si l'état a changé
+            }
+
+            // 2. Gestion des entrées utilisateur (plus fréquente)
+            _timeSinceLastInputCheck += deltaTime;
+            if (_timeSinceLastInputCheck >= InputCheckInterval)
+            {
+                _timeSinceLastInputCheck -= InputCheckInterval;
+                // ---> VERIFIER LES INPUTS (gauche, droite, rotation) <---
+                // Mettre à jour l'état si nécessaire
+                // Console.WriteLine("Tetris Tick: Check input");
+                // Potentiellement StateHasChanged() ici aussi si l'input change l'état visuel
+            }
+
+            // 3. Autres logiques à exécuter à chaque frame (ex: animations fluides)
+            // ... ici ...
+            
+        }
+    }
+
+    // Très important: Se désabonner lors de la destruction du composant
+    public void Dispose()
+    {
+        GameLoop.TickOccurred -= HandleGameTick;
+        Console.WriteLine("TetrisComponent: Disposed and unsubscribed from GameLoop.");
+        // Note: On ne demande PAS au service d'arrêter la boucle ici.
+        // Le service pourrait être utilisé par d'autres jeux/composants.
+        // L'arrêt devrait être géré par le cycle de vie du service ou une logique applicative globale.
+        // Ou, si on implémente le comptage d'abonnés dans le service, il s'arrêtera tout seul.
     }
 }

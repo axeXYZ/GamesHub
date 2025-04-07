@@ -9,6 +9,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Libs", "Libs", "{02EA681E-C
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TetrisGame", "..\Libs\TetrisGame\TetrisGame.csproj", "{83EB2F30-3366-4AA7-B07E-B5AB7734A8CA}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GameLoop", "..\Libs\GameLoop\GameLoop.csproj", "{9ABE1148-D920-4CD7-99B9-CA1EAFDBE6F4}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -23,12 +25,17 @@ Global
 		{83EB2F30-3366-4AA7-B07E-B5AB7734A8CA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{83EB2F30-3366-4AA7-B07E-B5AB7734A8CA}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{83EB2F30-3366-4AA7-B07E-B5AB7734A8CA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9ABE1148-D920-4CD7-99B9-CA1EAFDBE6F4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9ABE1148-D920-4CD7-99B9-CA1EAFDBE6F4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9ABE1148-D920-4CD7-99B9-CA1EAFDBE6F4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9ABE1148-D920-4CD7-99B9-CA1EAFDBE6F4}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{83EB2F30-3366-4AA7-B07E-B5AB7734A8CA} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{9ABE1148-D920-4CD7-99B9-CA1EAFDBE6F4} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {077C16B5-5B2A-4CA8-9E4D-1AACF71B5D7F}
