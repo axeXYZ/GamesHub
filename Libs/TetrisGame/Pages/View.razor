@@ -1,0 +1,94 @@
+﻿@page "/tetris"
+@using System.Globalization
+
+<h3>Jeu Tetris</h3>
+
+ Remplacer "MonAppBlazor" par le nom réel de votre projet
+
+<div class="tetris-layout">
+
+    <div class="margin-column left-margin" style="@LeftMarginStyle">
+        @* Vide *@
+    </div>
+
+    <div class="info-column">
+        <div class="score-zone">
+            <span>Meilleur Score:</span>
+            <span class="score-value">@bestScore</span>
+        </div>
+        <div class="controls-zone">
+            <button class="start-button" @onclick="StartGame" disabled="@isGameRunning">
+                @(isGameRunning ? "En Cours..." : "Démarrer")
+            </button>
+        </div>
+        <div class="preview-zone">
+            <span>Suivant:</span>
+            <div class="preview-box">
+                @* La prévisualisation du tétromino ira ici *@
+            </div>
+        </div>
+    </div>
+
+    <div class="spacer-column" style="@SpacerStyle">
+        @* Vide *@
+    </div>
+
+    <div class="game-area-column">
+        <div class="game-board-container">
+            @* Gardons ce conteneur relatif pour référence si besoin *@
+            <div class="game-board" style="@GridBackgroundStyle">
+                @* Les blocs du jeu (tétriminos) seront ajoutés ici plus tard *@
+                @* La grille est affichée via le background CSS *@
+            </div>
+        </div>
+    </div>
+
+</div>
+
+@code {
+    // --- Paramètres pour la grille ---
+    [Parameter] public int GridColumns { get; set; } = 10;
+    [Parameter] public int GridRows { get; set; } = 20;
+
+    // --- Paramètres pour les largeurs variables ---
+    [Parameter] public string LeftMarginWidth { get; set; } = "50px"; // Largeur de la marge gauche
+    [Parameter] public string SpacerWidth { get; set; } = "30px"; // Largeur de l'espaceur
+
+    // --- Dimensions fixes de la zone de jeu en pixels ---
+    private const double BoardWidthPx = 304.0;
+    private const double BoardHeightPx = 604.0;
+
+    // --- Variables d'état du jeu ---
+    private int bestScore = 0; // Sera chargé/sauvé plus tard
+    private int currentScore = 0; // Score actuel (pas encore affiché, mais prêt)
+    private bool isGameRunning = false; // Pour l'état du bouton Start
+
+    // --- Calcul pour le style de la grille en arrière-plan ---
+    private string CellWidthString => (BoardWidthPx / GridColumns).ToString("0.##", CultureInfo.InvariantCulture) + "px";
+    private string CellHeightString => (BoardHeightPx / GridRows).ToString("0.##", CultureInfo.InvariantCulture) + "px";
+    private string GridBackgroundStyle => $"--cell-width: {CellWidthString}; --cell-height: {CellHeightString};";
+
+    // --- Calcul pour les styles des colonnes variables ---
+    private string LeftMarginStyle => $"width: {LeftMarginWidth};";
+    private string SpacerStyle => $"width: {SpacerWidth};";
+
+    // --- Méthodes du jeu ---
+    private void StartGame()
+    {
+        if (!isGameRunning)
+        {
+            Console.WriteLine("Démarrage du jeu !"); // Logique de démarrage à implémenter
+            isGameRunning = true;
+            currentScore = 0;
+            // Réinitialiser le plateau, générer la première pièce, etc.
+            StateHasChanged(); // Notifie Blazor que l'état a changé (pour le bouton)
+        }
+    }
+
+    // Initialisation (par exemple, charger le meilleur score)
+    protected override async Task OnInitializedAsync()
+    {
+        // Ici, vous pourriez charger bestScore depuis le localStorage, par exemple
+        await base.OnInitializedAsync();
+    }
+}

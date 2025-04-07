@@ -1,0 +1,113 @@
+﻿/* Fichier: Tetris.razor.css */
+
+/* Conteneur principal Flexbox pour les colonnes */
+.tetris-layout {
+    display: flex;
+    align-items: flex-start; /* Aligne le haut des colonnes */
+    padding: 20px; /* Un peu d'espace autour de tout */
+}
+
+/* Styles communs pour les colonnes de marge/espaceur */
+.margin-column,
+.spacer-column {
+    flex-shrink: 0; /* Empêche ces colonnes de rétrécir */
+    /* La largeur est définie par le style inline calculé en C# */
+}
+
+/* Colonne 2: Informations et Contrôles (Largeur fixe) */
+.info-column {
+    width: 150px; /* Largeur fixe */
+    flex-shrink: 0; /* Empêche cette colonne de rétrécir */
+    display: flex;
+    flex-direction: column; /* Organise les éléments verticalement */
+    gap: 25px; /* Espace vertical entre les zones score/bouton/preview */
+    padding: 15px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    background-color: #f8f8f8;
+}
+
+    .info-column > div { /* Style pour chaque zone dans la colonne info */
+        display: flex;
+        flex-direction: column; /* Empile label et valeur/contenu */
+        align-items: center; /* Centre les éléments horizontalement */
+        gap: 8px; /* Espace entre label et valeur/contenu */
+    }
+
+.score-zone span:first-child,
+.preview-zone span:first-child { /* Styles pour les labels "Meilleur Score:", "Suivant:" */
+    font-size: 0.9em;
+    color: #555;
+}
+
+.score-value {
+    font-weight: bold;
+    font-size: 1.2em;
+    color: #333;
+}
+
+.controls-zone {
+    margin-top: auto; /* Pousse potentiellement vers le bas si plus d'espace */
+    margin-bottom: auto;
+}
+
+.start-button {
+    padding: 10px 20px;
+    font-size: 1.1em;
+    cursor: pointer;
+    background-color: #4CAF50; /* Vert */
+    color: white;
+    border: none;
+    border-radius: 4px;
+    transition: background-color 0.3s ease;
+}
+
+    .start-button:hover:not(:disabled) {
+        background-color: #45a049;
+    }
+
+    .start-button:disabled {
+        background-color: #cccccc;
+        cursor: not-allowed;
+    }
+
+/* Boîte de prévisualisation */
+.preview-box {
+    width: 100px; /* Taille fixe pour la preview */
+    height: 100px; /* Taille fixe pour la preview */
+    border: 1px solid #aaa;
+    background-color: #e0e0e0; /* Fond similaire à la grille principale */
+    display: flex; /* Pour centrer le contenu éventuel plus tard */
+    align-items: center;
+    justify-content: center;
+    /* Potentiellement ajouter un background-grid ici aussi plus tard */
+}
+
+/* Colonne 4: Zone de Jeu (Largeur fixe) */
+.game-area-column {
+    width: 308px; /* Largeur fixe = largeur du plateau */
+    flex-shrink: 0; /* Empêche cette colonne de rétrécir */
+}
+
+/* Conteneur du plateau (reste relatif) */
+.game-board-container {
+    position: relative; /* Contexte de positionnement */
+    width: 100%; /* Prend la largeur de la colonne parente */
+    height: 608px; /* Hauteur fixe du plateau */
+}
+
+/* Plateau de jeu */
+.game-board {
+    /* Dimensions fixes */
+    width: 100%; /* Prend 400px de .game-area-column */
+    height: 100%; /* Prend 600px de .game-board-container */
+
+    border: 2px solid black;
+    background-color: #f0f0f0;
+    overflow: hidden;
+    /* --- Style de grille (inchangé) --- */
+    --cell-width: 30px; /* fallback */
+    --cell-height: 30px; /* fallback */
+    background-image: linear-gradient(to right, #cccccc 1px, transparent 1px), linear-gradient(to bottom, #cccccc 1px, transparent 1px);
+    background-size: var(--cell-width) var(--cell-height);
+}
