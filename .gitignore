@@ -1,0 +1,12 @@
+# Fichiers et dossiers spécifiques à Visual Studio
+# Cache et paramètres utilisateur de Visual Studio
+.vs/
+
+# Dossiers de sortie de build
+# Contient les assemblys compilés et autres artefacts de build
+bin/
+obj/
+
+# Fichiers utilisateur spécifiques (souvent contiennent des chemins locaux ou préférences)
+*.user
+*.suo
