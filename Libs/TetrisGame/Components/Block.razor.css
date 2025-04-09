@@ -1,0 +1,57 @@
+﻿/* Components/Block.razor.css */
+
+/* La classe correspond à celle utilisée dans Block.razor */
+.block {
+    /* --- Paramètres Fixes --- */
+    width: 30px; /* Largeur fixe */
+    height: 30px; /* Hauteur fixe */
+    box-sizing: border-box;
+}
+    .block.type-0 { /* Type Empty */
+        background-color: #4d4d4d;
+        border-color: #292929;
+        border-width: 2px;
+        border-style: inset;
+    }
+    .block.type-1 { /* Type I */
+        background-color: #b8b500;
+        border-color: #e0dc00;
+        border-width: 5px;
+        border-style: outset;
+    }
+    .block.type-2 { /* Type O*/
+        background-color: #8400b8;
+        border-color: #a100e0;
+        border-width: 5px;
+        border-style: outset;
+    }
+    .block.type-3 { /* Type L */
+        background-color: #b80006;
+        border-color: #e00007;
+        border-width: 5px;
+        border-style: outset;
+    }
+    .block.type-4 { /* Type J */
+        background-color: #0f00b8;
+        border-color: #1300e0;
+        border-width: 5px;
+        border-style: outset;
+    }
+    .block.type-5 { /* Type S */
+        background-color: #00a6b8;
+        border-color: #00cae0;
+        border-width: 5px;
+        border-style: outset;
+    }
+    .block.type-6 { /* Type Z */
+        background-color: #2bb800;
+        border-color: #34e000;
+        border-width: 5px;
+        border-style: outset;
+    }
+    .block.type-7 { /* Type T */
+        background-color: #b86e00;
+        border-color: #e08700;
+        border-width: 5px;
+        border-style: outset;
+    }
