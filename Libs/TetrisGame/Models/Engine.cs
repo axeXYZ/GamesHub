@@ -1,101 +1,157 @@
 ﻿using Microsoft.JSInterop;
+using System;
+using System.Diagnostics; // Ajout pour Stopwatch
+using System.Threading.Tasks;
 
 namespace TetrisGame.Models;
-
-public interface IGameLoop
-{
-    // Événement déclenché à chaque frame par requestAnimationFrame
-    // Le double représente le deltaTime en secondes.
-    event Action<double> TickOccurred;
-
-    // Méthode pour s'assurer que la boucle est démarrée (si nécessaire)
-    // Peut être appelée par les composants de jeu lors de leur initialisation
-    Task EnsureLoopStartedAsync();
-
-    // On pourrait aussi ajouter une méthode pour arrêter explicitement si besoin,
-    // mais l'arrêt automatique basé sur les abonnements est souvent préférable.
-    // Task StopLoopAsync(); 
-}
-public class Engine : IGameLoop, IAsyncDisposable 
+public sealed class Engine : IAsyncDisposable
 {
     private readonly IJSRuntime _jsRuntime;
-    private DotNetObjectReference<Engine> _dotNetHelper;
-    private bool _isLoopRunning = false;
-    private int _subscriberCount = 0; // Pour démarrer/arrêter automatiquement
+    // Renommé pour clarté et ajout de TimeSpan deltaTime en paramètre
+    private readonly Action<TimeSpan> _onFrameUpdateAction;
+    // Nouvelle action pour le tick basé sur le temps
+    private readonly Action? _onTimeTickAction;
+    // Intervalle pour le onTimeTickAction
+    private readonly TimeSpan _tickInterval;
 
-    public event Action<double> TickOccurred;
+    private DotNetObjectReference<Engine>? _dotNetObjectReference;
+    private bool _isRunning = false;
+    private readonly string _instanceId;
 
-    public Engine(IJSRuntime jsRuntime)
+    // Pour mesurer le temps écoulé
+    private Stopwatch _stopwatch = new Stopwatch();
+    private TimeSpan _lastFrameTime = TimeSpan.Zero;
+    private TimeSpan _timeSinceLastTick = TimeSpan.Zero;
+
+
+    // --- CONSTRUCTEUR MODIFIÉ ---
+    public Engine(
+        IJSRuntime jsRuntime,
+        Action<TimeSpan> onFrameUpdateAction, // Attend maintenant un TimeSpan
+        Action? onTimeTickAction = null,      // Action pour le tick (optionnelle)
+        TimeSpan? tickInterval = null)        // Intervalle pour le tick ( requis si onTimeTickAction est fourni)
     {
-        _jsRuntime = jsRuntime;
-        _dotNetHelper = DotNetObjectReference.Create(this);
+        _jsRuntime = jsRuntime ?? throw new ArgumentNullException(nameof(jsRuntime));
+        _onFrameUpdateAction = onFrameUpdateAction ?? throw new ArgumentNullException(nameof(onFrameUpdateAction));
+
+        if (onTimeTickAction != null)
+        {
+            if (tickInterval == null || tickInterval.Value <= TimeSpan.Zero)
+            {
+                throw new ArgumentException("Un intervalle de temps positif doit être fourni si onTimeTickAction est défini.", nameof(tickInterval));
+            }
+            _onTimeTickAction = onTimeTickAction;
+            _tickInterval = tickInterval.Value;
+        }
+        else
+        {
+            // Si pas d'action de tick, on met un intervalle invalide pour ne jamais déclencher
+            _tickInterval = TimeSpan.MinValue;
+        }
+
+        _instanceId = Guid.NewGuid().ToString("N");
     }
 
-    public async Task EnsureLoopStartedAsync()
+    public async Task StartAsync()
     {
-        // Démarre la boucle JS uniquement si elle ne tourne pas déjà
-        if (!_isLoopRunning)
+        if (_isRunning) return;
+
+        _dotNetObjectReference = DotNetObjectReference.Create(this);
+        _isRunning = true;
+
+        // Réinitialiser et démarrer le chronomètre et les temps
+        _timeSinceLastTick = TimeSpan.Zero;
+        _lastFrameTime = TimeSpan.Zero;
+        _stopwatch.Restart(); // Redémarre le chronomètre
+
+        Console.WriteLine($"Starting engine {_instanceId}...");
+        try
         {
-            Console.WriteLine("GameLoopService: Requesting JS loop start.");
-            try
-            {
-                // Assurez-vous que gameLoop.js est chargé (peut être fait globalement dans index.html ou _Host.cshtml)
-                await _jsRuntime.InvokeVoidAsync("startGameLoop", _dotNetHelper);
-                _isLoopRunning = true;
-            }
-            catch (JSException ex)
-            {
-                Console.Error.WriteLine($"Error starting JS game loop: {ex.Message}");
-                // Gérer l'erreur - peut-être que le JS n'est pas chargé ?
-            }
+            await _jsRuntime.InvokeVoidAsync("gameLoopManager.start", _dotNetObjectReference, _instanceId);
+        }
+        catch (Exception ex) // Simplifié pour l'exemple
+        {
+            Console.Error.WriteLine($"Error starting game loop for {_instanceId}: {ex.Message}");
+            _isRunning = false;
+            _dotNetObjectReference?.Dispose();
+            _dotNetObjectReference = null;
+            _stopwatch.Stop();
         }
     }
 
-    // Méthode appelée par JavaScript à chaque frame
+    public async Task StopAsync()
+    {
+        if (!_isRunning) return;
+
+        _isRunning = false; // Important: doit être défini avant l'appel JS
+        _stopwatch.Stop(); // Arrête le chronomètre
+        Console.WriteLine($"Stopping engine {_instanceId}...");
+
+        try
+        {
+            await _jsRuntime.InvokeVoidAsync("gameLoopManager.stop", _instanceId);
+        }
+        catch (Exception ex) // Simplifié
+        {
+            Console.Error.WriteLine($"Error stopping JS game loop for {_instanceId}: {ex.Message}");
+        }
+
+        _dotNetObjectReference?.Dispose();
+        _dotNetObjectReference = null;
+        Console.WriteLine($"Engine {_instanceId} stopped and reference disposed.");
+    }
+
+    // --- GAMELOOPTICK MODIFIÉ ---
     [JSInvokable]
-    public void JsGameTick(double deltaTime)
+    public void GameLoopTick()
     {
-        // Déclencher l'événement pour tous les abonnés (les jeux)
-        TickOccurred?.Invoke(deltaTime);
-    }
+        if (!_isRunning) return;
 
-    // Méthode pour arrêter la boucle (appelée par Dispose ou explicitement)
-    private async Task StopLoopInternalAsync()
-    {
-        if (_isLoopRunning)
+        // --- Calcul du Delta Time ---
+        TimeSpan currentFrameTime = _stopwatch.Elapsed;
+        TimeSpan deltaTime = currentFrameTime - _lastFrameTime;
+        _lastFrameTime = currentFrameTime;
+
+        // Sécurité : Si deltaTime est trop grand (ex: débogage, longue pause), on le limite
+        // pour éviter des sauts énormes dans la logique ou des boucles infinies dans le while ci-dessous.
+        // 1/10ème de seconde est une limite raisonnable.
+        if (deltaTime > TimeSpan.FromMilliseconds(100))
         {
-            _isLoopRunning = false; // Marquer comme arrêté immédiatement
-            Console.WriteLine("GameLoopService: Requesting JS loop stop.");
-            try
+            deltaTime = TimeSpan.FromMilliseconds(100);
+        }
+
+
+        try
+        {
+            // --- Appel de l'Update de Frame ---
+            // Passe le deltaTime calculé à l'action de mise à jour par frame
+            _onFrameUpdateAction?.Invoke(deltaTime);
+
+            // --- Logique pour le Tick basé sur le Temps ---
+            if (_onTimeTickAction != null && _tickInterval > TimeSpan.Zero)
             {
-                // Peut échouer si le contexte JS est déjà parti (fermeture onglet)
-                await _jsRuntime.InvokeVoidAsync("stopGameLoop");
+                _timeSinceLastTick += deltaTime;
+
+                // Utilise 'while' au cas où plusieurs ticks se seraient écoulés
+                // (si une frame a pris beaucoup de temps ou si l'intervalle est très court)
+                while (_timeSinceLastTick >= _tickInterval)
+                {
+                    _onTimeTickAction.Invoke(); // Appelle l'action de tick
+                    _timeSinceLastTick -= _tickInterval; // Réduit l'accumulateur
+                }
             }
-            catch (JSException ex)
-            {
-                // C'est souvent normal lors de la fermeture rapide de l'application/onglet
-                Console.WriteLine($"GameLoopService: Info - JS stop command failed (maybe page closed): {ex.Message}");
-            }
-            catch (InvalidOperationException ex)
-            {
-                // Peut arriver si le JSRuntime n'est plus disponible
-                Console.WriteLine($"GameLoopService: Info - JS stop command failed (InvalidOperation): {ex.Message}");
-            }
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error during GameLoopTick for instance {_instanceId}: {ex.Message}");
+            // Envisager d'arrêter le moteur ici si l'erreur est critique
+            // Task.Run(async () => await StopAsync()); // Attention, ne pas faire await directement ici
         }
     }
 
-
-    // Logique pour gérer les abonnements et démarrer/arrêter automatiquement (Optionnel mais recommandé)
-    // Note : L'ajout/retrait d'event handler n'est pas async, donc on ne peut pas démarrer/arrêter la boucle ici directement de manière fiable.
-    // Il est plus simple de laisser le composant de jeu appeler EnsureLoopStartedAsync et gérer l'arrêt dans Dispose.
-    // Une alternative plus complexe impliquerait de wrapper l'event pour compter les abonnés.
-
-    // Nettoyage
-    public async ValueTask DisposeAsync() // Utiliser IAsyncDisposable
+    public async ValueTask DisposeAsync()
     {
-        Console.WriteLine("GameLoopService: Disposing...");
-        await StopLoopInternalAsync();
-        _dotNetHelper?.Dispose();
-        Console.WriteLine("GameLoopService: Disposed.");
+        await StopAsync();
+        GC.SuppressFinalize(this);
     }
 }

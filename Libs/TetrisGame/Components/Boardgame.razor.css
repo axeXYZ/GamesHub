@@ -1,0 +1,18 @@
+﻿/* Components/Boardgame.razor.css */
+
+.board-background {
+    display: grid;
+    grid-template-columns: repeat(var(--board-columns, 10), 30px); /* Crée N colonnes de largeur égale, prenant l'espace disponible */
+
+    width: 300px; /* Largeur totale du plateau (exemple) */
+    height: 600px; /* Hauteur totale du plateau (exemple) */
+    background-color: #c2c2c2; /* Couleur visible dans le 'gap' */
+}
+.board-cell {
+    width: 30px;
+    height: 30px;
+    background-color: #666666;
+    border-width: 1px;
+    border-style: solid;
+    border-color: #c2c2c2;
+}

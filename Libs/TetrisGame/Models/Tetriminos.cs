@@ -5,7 +5,7 @@ public class Tetriminos
     //
     // UInt16[nbRotations, hauteur, largeur]
     //
-    public ushort[,,] Z = new ushort[2, 3, 3]{
+    public ushort[,,] Z = {
         {// 0
             { 0, 0, 7 },
             { 0, 7, 7 },

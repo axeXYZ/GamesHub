@@ -1,0 +1,106 @@
+﻿@page "/tetris"
+@using TetrisGame.Components
+@using TetrisGame.Models
+@using System.Globalization
+@using Microsoft.JSInterop
+@implements IAsyncDisposable // Important pour nettoyer l'Engine
+@inject IJSRuntime JSRuntime // Injecte le service JS Runtime
+
+
+<h3>Jeu Tetris</h3>
+
+Remplacer "MonAppBlazor" par le nom réel de votre projet
+
+<div class="tetris-layout">
+
+    <div class="margin-column">
+        @* Vide *@
+    </div>
+
+    <div class="info-column">
+        <div class="score-zone">
+            <span>Meilleur Score:</span>
+            <span class="score-value">@_bestScore</span>
+        </div>
+        <div class="controls-zone">
+            <button class="start-button" @onclick="StartGame" disabled="@_isGameRunning">
+                @(_isGameRunning ? "En Cours..." : "Démarrer")
+            </button>
+        </div>
+        <div class="preview-zone">
+
+        </div>
+    </div>
+
+    <div class="spacer-column" style="width:40px">
+        @* Vide *@
+    </div>
+
+    <div class="game-area-column">
+        <Boardgame/>
+    </div>
+
+</div>
+
+@code {
+    private Engine? _engine;
+    private bool _isGameRunning = false;
+    private int _bestScore = 0;
+
+    private async Task StartGame()
+    {
+        if (_engine == null)
+        {
+            // Crée l'instance de l'Engine en lui passant la méthode Update de ce composant
+            _engine = new Engine(JSRuntime, GameUpdate, OnTick, TimeSpan.FromSeconds(0.5));
+            await _engine.StartAsync();
+            Console.WriteLine("Engine instance created and started.");
+        }
+    }
+
+    private async Task StopGame()
+    {
+        if (_engine != null)
+        {
+            await _engine.StopAsync();
+            // _engine.DisposeAsync() est appelé dans le Dispose du composant
+            _engine = null; // Permet de recréer si nécessaire
+            Console.WriteLine("Engine instance stopped.");
+        }
+    }
+
+    // C'est la méthode qui sera appelée ~60 fois par seconde par l'Engine
+    private void GameUpdate(TimeSpan deltaTime)
+    {
+        // ----- Logique de mise à jour du jeu -----
+
+        // ----- Mise à jour du visuel (via style) -----
+
+        // ----- Notification à Blazor de rafraîchir l'interface -----
+        // !! IMPORTANT !! Comme GameUpdate est appelé depuis JS Interop (en dehors du contexte de Blazor),
+        // il faut explicitement notifier Blazor que l'état a changé pour que le rendu soit mis à jour.
+        InvokeAsync(StateHasChanged);
+    }
+    private void OnTick()
+    {
+        _bestScore++;
+
+        // Mettre ici la logique qui doit s'exécuter à intervalle régulier
+        // Par exemple: vérifier des conditions de jeu, faire spawner des ennemis, etc.
+
+        // Si cette méthode modifie quelque chose qui doit être affiché, il faut aussi notifier Blazor
+        InvokeAsync(StateHasChanged);
+    }
+
+    // Implémentation de IAsyncDisposable pour nettoyer proprement l'Engine
+    public async ValueTask DisposeAsync()
+    {
+        Console.WriteLine("Disposing Game Component...");
+        if (_engine != null)
+        {
+            // Ceci appellera StopAsync() à l'intérieur de DisposeAsync de l'Engine
+            await _engine.DisposeAsync();
+            _engine = null;
+        }
+    }
+}
