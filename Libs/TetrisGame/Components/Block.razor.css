@@ -7,7 +7,15 @@
     height: 30px; /* Hauteur fixe */
     box-sizing: border-box;
 }
-    .block.type-0 { /* Type Empty */
+    .block.type-10 { /* Type Empty */
+    }
+    .block.type-11 { /* Type Arrow */
+        border-left: 15px solid transparent;
+        border-right: 15px solid transparent;
+        border-top: 20px solid #d40000;
+        border-bottom: 0px solid #d40000;
+    }
+    .block.type-0 { /* Type background */
         background-color: #4d4d4d;
         border-color: #292929;
         border-width: 2px;
@@ -55,3 +63,4 @@
         border-width: 5px;
         border-style: outset;
     }
+
