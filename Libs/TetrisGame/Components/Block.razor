@@ -1,0 +1,20 @@
+﻿@* Components/Block.razor *@
+
+@using System.Globalization
+@using System.Text.RegularExpressions
+
+@* Le composant reçoit sont TYPE(0-7) comme paramètres *@
+<div class="block type-@Type">
+    @* Plus besoin de contenu ou de style inline ici *@
+</div>
+
+@code {
+
+    /// <summary>
+    /// Reçoit le type de bloc (0-7), utilisé pour déterminer la classe CSS.
+    /// La valeur 0 représente une cellule vide selon le CSS fourni.
+    /// </summary>
+    [Parameter]
+    public ushort Type { get; set; } = 0; // Valeur par défaut (type 0 = vide/gris)
+
+}

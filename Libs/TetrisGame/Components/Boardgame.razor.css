@@ -1,6 +1,6 @@
 ﻿/* Components/Boardgame.razor.css */
 
-.board-game {
+.board-background {
     display: grid;
     grid-template-columns: repeat(var(--board-columns, 10), 30px); /* Crée N colonnes de largeur égale, prenant l'espace disponible */
 
