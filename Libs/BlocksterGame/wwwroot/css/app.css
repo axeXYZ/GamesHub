@@ -1,0 +1,47 @@
+﻿
+/* Style appliqué au body lorsque le jeu est en pause */
+body.game-paused-indicator::before {
+    content: ''; /* Nécessaire pour qu'un pseudo-élément s'affiche */
+    position: fixed; /* Positionné par rapport au viewport */
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 9999; /* Assure qu'il est au-dessus de la plupart des autres contenus */
+    pointer-events: none; /* TRÈS IMPORTANT : Permet de cliquer "à travers" la bordure */
+    /* Style de la bordure - Exemple avec border-image pour un dégradé */
+    border: 8px solid transparent; /* Crée l'espace pour l'image de bordure. Ajustez l'épaisseur (8px). */
+    /* Dégradé rouge simple. Vous pouvez le personnaliser. */
+    border-image: linear-gradient(45deg, rgba(255,0,0,1) 0%, rgba(255,100,100,0.7) 50%, rgba(255,0,0,1) 100%) 1;
+    border-image-slice: 1; /* Valeur standard pour utiliser toute l'image */
+    /* --- Animation de clignotement --- */
+    animation: flash-pause-border 1.2s infinite ease-in-out; /* Nom, durée, répétition, timing */
+}
+
+/* Définition de l'animation */
+@keyframes flash-pause-border {
+    0%, 100% {
+        opacity: 1; /* Pleinement visible */
+    }
+
+    50% {
+        opacity: 0.3; /* Partiellement transparent */
+    }
+}
+/* Optionnel : Alternative avec box-shadow si border-image pose problème */
+/*
+body.game-paused-indicator::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    z-index: 9999;
+    pointer-events: none;
+    box-shadow: 0 0 15px 8px rgba(255, 0, 0, 0.7); // Ombre portée rouge
+    animation: flash-pause-shadow 1.2s infinite ease-in-out;
+}
+
+@keyframes flash-pause-shadow {
+    0%, 100% { box-shadow: 0 0 15px 8px rgba(255, 0, 0, 0.7); opacity: 1;}
+    50% { box-shadow: 0 0 25px 12px rgba(255, 0, 0, 0.4); opacity: 0.5;}
+}
+*/

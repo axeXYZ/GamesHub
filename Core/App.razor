@@ -1,7 +1,8 @@
-﻿@using TetrisGame;
+﻿@using BlocksterGame;
+@inject InputManager.Services.IInputHandler InputHandler
 
 <Router AppAssembly="@typeof(App).Assembly"
-        AdditionalAssemblies="new[] { typeof(TetrisCoreMaker).Assembly }">
+        AdditionalAssemblies="new[] { typeof(BlocksterCoreMaker).Assembly }">
     <Found Context="routeData">
         <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)" />
         <FocusOnNavigate RouteData="@routeData" Selector="h1" />
@@ -13,3 +14,14 @@
         </LayoutView>
     </NotFound>
 </Router>
+
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        Console.WriteLine("App.razor: Calling InputHandler.InitializeAsync()...");
+        await InputHandler.InitializeAsync(); // Démarre l'écoute globale
+        await base.OnInitializedAsync();
+        Console.WriteLine("App.razor: OnInitializedAsync complete.");
+    }
+}

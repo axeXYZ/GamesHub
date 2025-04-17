@@ -6,13 +6,6 @@
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
 
-  <ItemGroup>
-    <Compile Remove="Services\**" />
-    <Content Remove="Services\**" />
-    <EmbeddedResource Remove="Services\**" />
-    <None Remove="Services\**" />
-  </ItemGroup>
-
 
   <ItemGroup>
     <SupportedPlatform Include="browser" />
@@ -20,6 +13,11 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="9.0.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Engine\Engine.csproj" />
+    <ProjectReference Include="..\InputHandler\InputManager.csproj" />
   </ItemGroup>
 
 </Project>

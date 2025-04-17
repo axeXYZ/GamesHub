@@ -19,7 +19,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Libs\TetrisGame\TetrisGame.csproj" />
+    <ProjectReference Include="..\Libs\BlocksterGame\BlocksterGame.csproj" />
   </ItemGroup>
+
+
 
 </Project>

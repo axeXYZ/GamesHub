@@ -1,0 +1,775 @@
+﻿@page "/blockster"
+
+@* ----- INJECTIONS et USINGS ----- *@
+@using BlocksterGame.Models              
+@using BlocksterGame.Components              
+@using Engine
+@using InputManager  
+@using System.Globalization  
+@using Microsoft.JSInterop
+@implements IAsyncDisposable      
+@inject IJSRuntime JSRuntime
+@inject NavigationManager NavManager  
+@inject Engine.Services.IGameLoop GameLoop
+@inject InputManager.Services.IInputHandler InputHandler
+
+<div class="Page-layout">
+
+    @* Colonne Marge Gauche *@
+    <div class="margin-column"></div>
+
+    @* Colonne Infos/Contrôles *@
+    <div class="info-column">
+        <div class="score-zone"> @* Ajout pour Score Actuel *@
+            <span>Score Actuel:</span>
+            <span class="score-value">@_currentScore</span>
+        </div>
+        <div class="controls-zone">
+            <button class="start-button" @onclick="OnStartButton" disabled="@_isGameRunning">
+                @(_isGameRunning ? "En Cours..." : "Démarrer")
+            </button>
+            <button class="start-button" @onclick="OnStopButton" disabled="@(!_isGameRunning)" style="background-color: #f44336;">
+                Arrêter
+            </button>
+        </div>
+        <div class="preview-zone">
+            <span>Suivant:</span>
+            @* TODO: Implémenter le rendu de la pièce preview (_tetriminos.Preview) *@
+            <div class="preview-grid" style="--board-columns: 4;">
+                @* Boucle pour générer le Preview (4 lignes x 4 colonnes) *@
+                @for (int row = 0; row < 4; row++)
+                {
+                    @for (int col = 0; col < 4; col++)
+                    {
+                        <Block Type="GetPreviewBlockType(row, col)" /> @* Utilise le composant Block.razor *@
+                    }
+                }
+             </div>
+        </div>
+    </div>
+
+    @* Colonne Espaceur *@
+    <div class="spacer-column" style="width:40px"></div>
+
+    @* Colonne Aire de Jeu *@
+    <div class="game-area-column">
+        <div class="board-game" style="--board-columns: 10;">
+            @* Boucle pour générer le Board (20 lignes x 10 colonnes) *@
+            @for (int row = 0; row < 20; row++)
+            {
+                @for (int col = 0; col < 10; col++)
+                {
+                    <Block Type="_dataGrid[row, col]" /> @* Utilise le composant Block.razor *@
+                }
+            }
+        </div>
+        @* Affichage Game Over (conditionnel) *@
+        @if (_isGameOver)
+        {
+            <div class="game-over-overlay">GAME OVER</div>
+        }
+    </div>
+
+</div>
+
+@code {
+    // --- État du Jeu ---
+    private bool _isGameRunning = false;
+    private bool _isGameOver = false;
+
+    // --- Pièces et Grille ---
+    private Blocks _nextBlocks = new();
+    private Blocks _activeBlocks = new();
+    private int _activeShapeAnchorRow; // Colonne actuelle du coin supérieur gauche
+    private int _activeShapeAnchorCol; // Ligne actuelle du coin supérieur gauche de la pièce
+    private bool _isLanded = false; // Indique si la pièce a touché le bas de la grille ou une autre pièce
+
+    private int _spawnIndex = 5; // Colonne où les pièces apparaissent (0-indexed)
+    private int _currentScore = 0;
+    private int _bestScore = 0; // TODO: Charger/Sauvegarder le meilleur score
+    private int _currentLevel = 1; // TODO: Gérer la montée de niveau
+    private ushort[,] _dataGrid = new ushort[20, 10]; // Grille de jeu [ligne, colonne]
+
+    // --- Variables de Contrôle ---
+    private float _gameSpeed = 1.0f; // Mettez ici le temps désiré en secondes
+    private float _timeSinceLastGravity = 0.0f;
+
+    private readonly float repeatedMoveRightDelay = 0.2f;
+    private float _timeSinceLastMoveRight = 0.0f;
+
+    private readonly float repeatedMoveLeftDelay = 0.2f;
+    private float _timeSinceLastMoveLeft = 0.0f;
+
+    private readonly float repeateddMoveDownDelay = 0.2f;
+    private float _timeSinceLastMoveDown = 0.0f;
+
+    private bool _isPausedManually = false; // Pour une pause via bouton par ex.
+    private bool _isPausedBySystem = false; // Pour suivre l'état demandé par GameLoop
+    // Vos boucles de jeu doivent maintenant vérifier l'état de pause combiné
+    private bool IsGameEffectivelyPaused => _isPausedManually || _isPausedBySystem;
+
+
+    protected override async Task OnInitializedAsync()
+    {
+#if DEBUG
+        Console.WriteLine($"Game.razor (Instance: {this.GetHashCode()}): Initializing...");
+#endif
+        // Vérifier que les services sont injectés (bonne pratique)
+        ArgumentNullException.ThrowIfNull(GameLoop);
+        ArgumentNullException.ThrowIfNull(InputHandler);
+
+        ResetSpawnPos(); // Réinitialise la position de spawn pour les pièces
+        ResetDataGrid(); // Réinitialise la grille de jeu à zéro (cellules vides)
+
+        GameLoop.PhysicsUpdate += OnPhysicsUpdate; // Abonne la méthode PhysicsUpdate à l'Engine
+        GameLoop.PauseRequested += OnPauseRequested;
+        GameLoop.ResumeRequested += OnResumeRequested;
+
+
+        InputHandler.OnKeyDown.A += () => Move(-1, 0);
+        InputHandler.OnKeyUp.A += () => _timeSinceLastMoveLeft = 0.0f; // Réinitialise le timer
+        InputHandler.OnKeyDown.D += () => Move(1, 0);
+        InputHandler.OnKeyUp.D += () => _timeSinceLastMoveRight = 0.0f; // Réinitialise le timer
+        InputHandler.OnKeyDown.S += () => Move(0, 1);
+        InputHandler.OnKeyUp.S += () => _timeSinceLastMoveDown = 0.0f; // Réinitialise le timer
+        InputHandler.OnKeyDown.R += TryRotate;
+
+        await base.OnInitializedAsync();
+    }
+
+    private void ResetSpawnPos()
+    {
+        // Réinitialise la position de spawn pour les pièces
+        _spawnIndex = 5;
+    }
+
+    private void ResetDataGrid()
+    {
+        // Réinitialise la grille de jeu à zéro (cellules vides)
+        for (int row = 0; row < _dataGrid.GetLength(0); row++)
+        {
+            for (int col = 0; col < _dataGrid.GetLength(1); col++)
+            {
+                _dataGrid[row, col] = 0; // Cellule vide
+            }
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+#if DEBUG
+        Console.WriteLine($"Game.razor (Instance: {this.GetHashCode()}): Disposing...");
+#endif
+        GameLoop.PhysicsUpdate -= OnPhysicsUpdate; // Abonne la méthode PhysicsUpdate à l'Engine
+        GameLoop.PauseRequested -= OnPauseRequested;
+        GameLoop.ResumeRequested -= OnResumeRequested;
+
+        InputHandler.OnKeyDown.A -= () => Move(-1, 0);
+        InputHandler.OnKeyDown.A -= () => _timeSinceLastMoveLeft = 0.0f; // Réinitialise le timer
+        InputHandler.OnKeyDown.D -= () => Move(1, 0);
+        InputHandler.OnKeyDown.D -= () => _timeSinceLastMoveRight = 0.0f; // Réinitialise le timer
+        InputHandler.OnKeyDown.S -= () => Move(0, 1);
+        InputHandler.OnKeyDown.S -= () => _timeSinceLastMoveDown = 0.0f; // Réinitialise le timer
+        InputHandler.OnKeyDown.R -= TryRotate;
+
+        GC.SuppressFinalize(this); // Indique au GC que le nettoyage est fait
+
+        // S'assurer que l'indicateur est retiré si on quitte le composant en pause
+        if (IsGameEffectivelyPaused) // Vérifie l'état de pause combiné
+        {
+            try
+            {
+                // Vérifier si JSRuntime est toujours valide (peut être null si prérendu/déconnecté)
+                if (JSRuntime != null)
+                {
+                    await JSRuntime.InvokeVoidAsync("appUtils.setBodyPausedIndicator", false);
+                }
+            }
+            catch (Exception ex) when (ex is JSDisconnectedException || ex is OperationCanceledException)
+            {
+                Console.WriteLine($"JS Interop failed during dispose (browser closed?): {ex.Message}");
+                // Normal si le navigateur est fermé
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error removing pause indicator during dispose: {ex.Message}");
+                // Log l'erreur mais ne pas planter la libération des ressources
+            }
+        }
+
+#if DEBUG
+        Console.WriteLine($"Game.razor (Instance: {this.GetHashCode()}): Disposed.");
+#endif
+    }
+
+    private async Task OnStartButton()
+    {
+        if (_isGameRunning) return;
+
+#if DEBUG
+        Console.WriteLine($"Game.razor (Instance: {this.GetHashCode()}): UI Requesting Game Start...");
+#endif
+
+        try
+        {
+            await GameLoop.StartAsync(); // Démarre l'Engine
+#if DEBUG
+        Console.WriteLine($"Game.razor (Instance: {this.GetHashCode()}): GameLoop Started.");
+#endif
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error starting GameLoop: {ex.Message}");
+            _isGameRunning = false; // Échec du démarrage, revenir à l'état non actif
+            // Peut-être afficher un message d'erreur à l'utilisateur ici
+        }
+
+        StartGame();
+
+
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private void StartGame()
+    {
+        // Réinitialiser l'état du jeu avant de démarrer
+        _isGameOver = false;
+        _currentScore = 0;
+        _currentLevel = 1;
+        _bestScore = 0; // TODO: Charger le meilleur score depuis un fichier ou une base de données
+
+        _timeSinceLastGravity = 0.0f;
+
+        ResetSpawnPos(); // Réinitialise la position de spawn pour les pièces
+        ResetDataGrid(); // Réinitialise la grille de jeu
+
+        _isGameRunning = true; // Met à jour l'état UI immédiatement
+        
+        Spawn();
+    }
+
+    private async Task OnStopButton()
+    {
+        if (!_isGameRunning) return;
+#if DEBUG
+        Console.WriteLine($"Game.razor (Instance: {this.GetHashCode()}): UI Requesting Game Stop...");
+#endif
+        _isGameRunning = false; // Met à jour l'état UI immédiatement
+        StateHasChanged(); // Force la mise à jour de l'UI (boutons)
+
+        await GameLoop.StopAsync(); // Stoppe l'Engine
+    }
+
+    private void OnPhysicsUpdate(float fixedDeltaTime)
+    {
+        if (!_isGameRunning || IsGameEffectivelyPaused) return;
+
+        // --- Input ---
+
+        // Move Left
+        if (InputHandler.Keys.A.IsDown)
+        {
+            _timeSinceLastMoveLeft += fixedDeltaTime; // Accumule le temps écoulé
+
+            if (_timeSinceLastMoveLeft >= repeatedMoveLeftDelay)
+            {
+                _timeSinceLastMoveLeft = 0.0f; // Réinitialise le timer
+                Move(-1, 0); // Déplacement gauche
+            }
+        }
+
+        // Move Right
+        if (InputHandler.Keys.D.IsDown)
+        {
+            _timeSinceLastMoveRight += fixedDeltaTime; // Accumule le temps écoulé
+            if (_timeSinceLastMoveRight >= repeatedMoveRightDelay)
+            {
+                _timeSinceLastMoveRight = 0.0f; // Réinitialise le timer
+                Move(1, 0); // Déplacement droite
+            }
+        }
+
+        // Move Down
+        if (InputHandler.Keys.S.IsDown)
+        {
+            _timeSinceLastMoveDown += fixedDeltaTime; // Accumule le temps écoulé
+            if (_timeSinceLastMoveDown >= repeateddMoveDownDelay)
+            {
+                _timeSinceLastMoveDown = 0.0f; // Réinitialise le timer
+                Move(0, 1); // Déplacement bas
+            }
+        }
+
+        
+
+        // --- Mécanique de temporisation ---
+        _timeSinceLastGravity += fixedDeltaTime; // Accumule le temps écoulé
+
+        if (_timeSinceLastGravity >= _gameSpeed)
+        {
+            // Le timer de gravité/lock s'est écoulé
+            bool wasLandedBeforeGravity = _isLanded; // Sauvegarde l'état avant la tentative de descente
+
+            // Tente de descendre la pièce à cause de la gravité
+            bool movedDownSuccessfully = Move(0, 1);
+
+            // Réinitialise TOUJOURS le timer après un tick de gravité
+            _timeSinceLastGravity = 0.0f;
+
+            // --- Condition de Verrouillage ---
+            // Si la pièce ÉTAIT posée AVANT ce tick de gravité
+            // ET qu'elle N'A PAS pu descendre pendant ce tick,
+            // ALORS il faut la verrouiller.
+            if (wasLandedBeforeGravity && !movedDownSuccessfully)
+            {
+                LockShape();
+            }
+
+        }
+
+        InvokeAsync(StateHasChanged);
+    }
+
+    private async void OnPauseRequested()
+    {
+        _isPausedBySystem = true;
+        Console.WriteLine("Game.razor: Pause Requested by system.");
+
+        try
+        {
+            // Ajoute la classe CSS via JS Interop
+            await JSRuntime.InvokeVoidAsync("appUtils.setBodyPausedIndicator", true);
+        }
+        catch (Exception ex) when (ex is JSDisconnectedException || ex is OperationCanceledException)
+        {
+            Console.WriteLine($"JS Interop failed (browser closed?): {ex.Message}");
+            // Gérer la déconnexion si nécessaire
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error calling JS setBodyPausedIndicator(true): {ex.Message}");
+        }
+
+
+        // _inputHandler.ClearAllKeys(); // Si nécessaire
+        StateHasChanged();
+    }
+
+    private async void OnResumeRequested()
+    {
+        // Ne reprendre que si le jeu n'est pas aussi en pause manuellement
+        if (!_isPausedManually)
+        {
+            _isPausedBySystem = false;
+            Console.WriteLine("Game.razor: Resume Requested by system.");
+
+            try
+            {
+                // Retire la classe CSS via JS Interop
+                await JSRuntime.InvokeVoidAsync("appUtils.setBodyPausedIndicator", false);
+            }
+            catch (Exception ex) when (ex is JSDisconnectedException || ex is OperationCanceledException)
+            {
+                Console.WriteLine($"JS Interop failed (browser closed?): {ex.Message}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error calling JS setBodyPausedIndicator(false): {ex.Message}");
+            }
+
+            StateHasChanged();
+        }
+        else
+        {
+            Console.WriteLine("Game.razor: Resume Requested by system, but game is manually paused.");
+        }
+    }
+
+    private bool Move(int dx, int dy)
+    {
+        // Note: J'ai inversé Row et Col dans les variables pour correspondre à leur usage.
+        // Renommez _activeTetriminoAnchorCol en _activePieceTopRow
+        // Renommez _activeTetriminoAnchorRow en _activePieceLeftCol
+        // Je vais utiliser les nouveaux noms suggérés ici pour la clarté :
+        int currentTopRow = _activeShapeAnchorCol; // (Utilise vos anciens noms pour l'instant)
+        int currentLeftCol = _activeShapeAnchorRow;
+
+        // 1. Effacer la pièce de sa position actuelle
+        //    Utilisez vos noms de variables ici: _activeTetriminoAnchorCol, _activeTetriminoAnchorRow
+        RemoveShapeFromDataGrid(_activeBlocks.Shape, _activeShapeAnchorCol, _activeShapeAnchorRow);
+
+        int targetTopRow = _activeShapeAnchorCol + dy; // La cible en ligne
+        int targetLeftCol = _activeShapeAnchorRow + dx; // La cible en colonne
+
+        // 2. Vérifier la collision à la nouvelle position
+        bool collision = CheckCollision(_activeBlocks.Shape, targetTopRow, targetLeftCol);
+
+        if (!collision)
+        {
+            // 3. Pas de collision : Mettre à jour la position et redessiner
+            _activeShapeAnchorCol = targetTopRow; // Met à jour la ligne réelle
+            _activeShapeAnchorRow = targetLeftCol; // Met à jour la colonne réelle
+
+            AddShapeToDataGrid(_activeBlocks.Shape, _activeShapeAnchorCol, _activeShapeAnchorRow); // Redessine à la nouvelle position
+
+            // Si la pièce a bougé avec succès, elle n'est plus considérée comme posée
+            _isLanded = false;
+
+            return true; // Mouvement réussi
+        }
+        else
+        {
+            // 4. Collision : Redessiner à l'ancienne position (importante !)
+            AddShapeToDataGrid(_activeBlocks.Shape, _activeShapeAnchorCol, _activeShapeAnchorRow);
+
+            // Si la collision survient lors d'une tentative de DESCENTE (dy > 0)
+            if (dy > 0)
+            {
+                // La pièce a touché quelque chose en dessous. Marquer comme posée.
+                _isLanded = true;
+            }
+            // Si la collision était horizontale ou lors d'une rotation, l'état _isPieceLanded ne change pas forcément.
+
+            return false; // Mouvement échoué
+        }
+    }
+
+    private void TryRotate()
+    {
+        // Sauvegarder l'état actuel au cas où la rotation échoue
+        ushort[,] originalShape = _activeBlocks.Shape;
+        int currentAnchorCol = _activeShapeAnchorCol;
+        int currentAnchorRow = _activeShapeAnchorRow;
+
+        // 1. Obtenir la forme potentielle après rotation
+        ushort[,] rotatedShape = _activeBlocks.GetNextShape();
+
+        // 2. D'ABORD, effacer la forme ACTUELLE de la grille
+        RemoveShapeFromDataGrid(originalShape, currentAnchorCol, currentAnchorRow);
+
+        // 3. ENSUITE, vérifier la collision pour la forme TOURNÉE à la position actuelle
+        bool collisionDetected = CheckCollision(rotatedShape, currentAnchorCol, currentAnchorRow);
+
+        if (!collisionDetected) // Si PAS de collision
+        {
+            // 4a. Appliquer la rotation à l'objet et redessiner la NOUVELLE forme
+            _activeBlocks.SetToNextShape(); // Change l'état de la pièce
+            AddShapeToDataGrid(_activeBlocks.Shape, currentAnchorCol, currentAnchorRow); // Dessine la forme tournée
+
+            // Optionnel : Mettre à jour l'état 'landed' après rotation
+            _isLanded = CheckCollision(_activeBlocks.Shape, currentAnchorCol + 1, currentAnchorRow);
+
+            Console.WriteLine("TryRotate: Rotation successful."); // Log
+        }
+        else // S'il y avait collision
+        {
+            // 4b. Annuler l'effacement en redessinant la forme ORIGINALE
+            AddShapeToDataGrid(originalShape, currentAnchorCol, currentAnchorRow);
+
+            Console.WriteLine("TryRotate: Rotation blocked by collision, restored original shape."); // Log
+        }
+
+        // Un StateHasChanged peut être nécessaire ici si vous voulez voir la rotation immédiatement
+        // ou si le rendu n'est pas déjà géré par la boucle principale.
+        // StateHasChanged();
+    }
+
+
+    private bool Spawn()
+    {
+        int anchorRow = 0;
+        int anchorCol = _spawnIndex;
+
+        // Vérifie si cette position de départ est valide (pas de collision)
+        if (CheckCollision(_activeBlocks.Shape, anchorRow, anchorCol))
+        {
+            // Collision immédiate au spawn : C'est la condition de Game Over !
+            Console.WriteLine("GAME OVER - Collision on spawn.");
+
+            _isGameOver = true; // Active l'overlay Game Over
+            
+            Task.Run(() => OnStopButton()); // Demande l'arrêt de l'engine
+            
+            return false; // Le spawn a échoué
+        }
+        
+        _activeBlocks = _nextBlocks; // La pièce active devient la prochaine pièce
+
+        _activeShapeAnchorCol = anchorRow; // Met à jour la position de la pièce active
+        _activeShapeAnchorRow = anchorCol;
+
+        AddShapeToDataGrid(_activeBlocks.Shape, _activeShapeAnchorCol, _activeShapeAnchorRow);
+
+        _nextBlocks = new Blocks();
+
+        // Pas de collision : Le spawn est réussi.
+        Console.WriteLine($"Spawned piece at [{anchorCol},{anchorRow}].");
+        return true; // Le spawn a réussi
+    }
+
+    /// <summary>
+    /// Efface les blocs d'une pièce spécifique de la grille principale (_dataGrid)
+    /// à la position donnée. Ceci est utilisé pour "effacer" la pièce avant de la redessiner
+    /// à une nouvelle position ou après une rotation.
+    /// </summary>
+    /// <param name="shape">La forme 2D (matrice ushort[,]) de la pièce à effacer.</param>
+    /// <param name="rowIndex">La ligne du coin supérieur gauche de la pièce sur _dataGrid.</param>
+    /// <param name="colIndex">La colonne du coin supérieur gauche de la pièce sur _dataGrid.</param>
+    private void RemoveShapeFromDataGrid(ushort[,] shape, int rowIndex, int colIndex)
+    {
+        // Sécurité : Vérifie si la forme est valide
+        if (shape == null) return;
+
+        int pieceRows = shape.GetLength(0);
+        int pieceCols = shape.GetLength(1);
+        int gridRows = _dataGrid.GetLength(0);
+        int gridCols = _dataGrid.GetLength(1);
+
+        // Parcours chaque cellule de la forme de la pièce
+        for (int r = 0; r < pieceRows; r++)
+        {
+            for (int c = 0; c < pieceCols; c++)
+            {
+                // Si c'est une partie solide de la pièce
+                if (shape[r, c] != 0)
+                {
+                    // Calcule la position correspondante sur la grille principale
+                    int targetRow = rowIndex + r;
+                    int targetCol = colIndex + c;
+
+                    // Vérifie si cette position est DANS les limites JOUABLES de la grille
+                    // (On ignore la ligne 0 et on vérifie les autres bords)
+                    if (targetRow >= 0 && targetRow < gridRows && targetCol >= 0 && targetCol < gridCols)
+                    {
+                        // Remplace la cellule par 0 (vide)
+                        _dataGrid[targetRow, targetCol] = 0;
+                    }
+                }
+            }
+        }
+    }
+    private void AddShapeToDataGrid(ushort[,] shape, int rowIndex, int colIndex)
+    {
+        int pieceRows = shape.GetLength(0);
+        int pieceCols = shape.GetLength(1);
+
+        for (int r = 0; r < pieceRows; r++)
+        {
+            for (int c = 0; c < pieceCols; c++)
+            {
+                if (shape[r, c] != 0)
+                {
+                    int targetRow = rowIndex + r;
+                    int targetCol = colIndex + c;
+
+                    if (targetRow >= 0 && targetRow < _dataGrid.GetLength(0) &&
+                        targetCol >= 0 && targetCol < _dataGrid.GetLength(1))
+                    {
+                        _dataGrid[targetRow, targetCol] = shape[r, c];
+                    }
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Vérifie si la forme donnée (`pieceShape`) à la position cible (`targetRow`, `targetCol`)
+    /// entrerait en collision avec les bords de la grille ou des blocs déjà verrouillés.
+    /// IMPORTANT: Cette méthode doit être appelée APRÈS avoir effacé la pièce de sa position précédente
+    /// pour ne pas qu'elle se détecte elle-même comme une collision.
+    /// </summary>
+    /// <param name="shape">La forme 2D de la pièce à tester.</param>
+    /// <param name="targetRow">La ligne cible du coin supérieur gauche de la pièce.</param>
+    /// <param name="targetCol">La colonne cible du coin supérieur gauche de la pièce.</param>
+    /// <returns>True s'il y a une collision, False sinon.</returns>
+    private bool CheckCollision(ushort[,] shape, int targetRow, int targetCol)
+    {
+        int pieceRows = shape.GetLength(0);
+        int pieceCols = shape.GetLength(1);
+        int gridRows = _dataGrid.GetLength(0); // typiquement 21 (0-20)
+        int gridCols = _dataGrid.GetLength(1); // typiquement 10 (0-9)
+
+        // Parcours chaque cellule de la forme de la pièce
+        for (int r = 0; r < pieceRows; r++)
+        {
+            for (int c = 0; c < pieceCols; c++)
+            {
+                // On ne teste que les parties solides de la pièce (valeur != 0)
+                if (shape[r, c] != 0)
+                {
+                    // Calcule les coordonnées correspondantes sur la grille principale
+                    int gridR = targetRow + r;
+                    int gridC = targetCol + c;
+
+                    // 1. Vérification des collisions avec les bords :
+                    // - Dépassement à gauche (col < 0) ?
+                    // - Dépassement à droite (col >= gridCols) ?
+                    // - Dépassement en bas (row >= gridRows) ?
+                    // - Dépassement en haut (row < 0) ?
+                    if (gridC < 0 || gridC >= gridCols || gridR >= gridRows || gridR < 0)
+                    {
+                        return true; // Collision avec un bord
+                    }
+
+                    // 2. Vérification des collisions avec d'autres pièces déjà verrouillées :
+                    // Si la cellule cible sur la grille (dans la zone jouable row >= 1)
+                    // n'est pas vide (valeur != 0), alors il y a collision.
+                    // (On sait que la pièce active a été effacée avant cet appel).
+                    if (_dataGrid[gridR, gridC] != 0)
+                    {
+                        return true; // Collision avec un bloc existant
+                    }
+                }
+            }
+        }
+
+        // Si on arrive ici, aucune collision n'a été détectée pour aucune partie de la pièce.
+        return false;
+    }
+
+
+    /// <summary>
+    /// Verrouille la pièce active en place (elle est déjà dessinée sur _dataGrid).
+    /// Appelle ensuite ClearLines pour vérifier les lignes complétées et Spawn pour la pièce suivante.
+    /// </summary>
+    private void LockShape()
+    {
+        Console.WriteLine($"Locking piece at Row={_activeShapeAnchorCol}, Col={_activeShapeAnchorRow}");
+        // La pièce est déjà sur la grille (ajoutée par le dernier Move/TryRotate échoué ou réussi)
+
+        CheckToClearLines(); // Vérifie les lignes complètes
+
+        // Tente de faire apparaître la pièce suivante. Gère le Game Over si Spawn échoue.
+        if (!Spawn())
+        {
+            Console.WriteLine("Spawn failed after lock - Game Over sequence should be active.");
+        }
+        // Si Spawn réussit, _isPieceLanded est remis à false dans Spawn().
+    }
+
+
+    /// <summary>
+    /// Vérifie toutes les lignes de la grille de jeu (de bas en haut, en ignorant la ligne 0)
+    /// pour trouver les lignes complètes. Supprime les lignes complètes et fait descendre
+    /// les lignes situées au-dessus. Met à jour le score (TODO).
+    /// </summary>
+    private void CheckToClearLines()
+    {
+        int gridRows = _dataGrid.GetLength(0); // 21
+        int gridCols = _dataGrid.GetLength(1); // 10
+        int linesCleared = 0;
+
+        // Parcours les lignes jouables de bas en haut (index 20 à 1)
+        for (int r = gridRows - 1; r >= 1; r--)
+        {
+            bool isLineComplete = true;
+            // Vérifie si toutes les cellules de la ligne 'r' sont remplies
+            for (int c = 0; c < gridCols; c++)
+            {
+                if (_dataGrid[r, c] == 0) // Si on trouve une cellule vide
+                {
+                    isLineComplete = false; // La ligne n'est pas complète
+                    break; // Pas la peine de vérifier le reste de la ligne
+                }
+            }
+
+            // Si la ligne 'r' est complète
+            if (isLineComplete)
+            {
+                linesCleared++; // Compte la ligne effacée
+                Console.WriteLine($"Line {r} cleared!");
+
+                // Décale toutes les lignes au-dessus de 'r' vers le bas d'un cran
+                for (int moveRow = r; moveRow >= 1; moveRow--)
+                {
+                    for (int c = 0; c < gridCols; c++)
+                    {
+                        // La ligne 'moveRow' prend la valeur de la ligne juste au-dessus ('moveRow - 1')
+                        // Si on est à la ligne 1 (la plus haute jouable), elle prend la valeur 0 (vide)
+                        // car il n'y a rien au-dessus (la ligne 0 est non jouable).
+                        _dataGrid[moveRow, c] = (moveRow == 1) ? (ushort)0 : _dataGrid[moveRow - 1, c];
+                    }
+                }
+
+                // IMPORTANT : Puisqu'on a décalé les lignes, la ligne à l'index 'r' contient maintenant
+                // le contenu de l'ancienne ligne 'r-1'. Il faut donc revérifier cette *même* ligne 'r'
+                // lors de la prochaine itération de la boucle externe `for`.
+                // L'incrémentation `r++` compense le `r--` de la boucle `for`.
+                r++;
+            }
+        }
+
+        // Si au moins une ligne a été effacée, mettre à jour le score et potentiellement le niveau/vitesse.
+        if (linesCleared > 0)
+        {
+            Console.WriteLine($"Total lines cleared this step: {linesCleared}");
+            _currentScore += CalculateScore(linesCleared, _currentLevel); // Met à jour le score actuel
+            if (_currentScore > _bestScore) {
+                _bestScore = _currentScore; // Met à jour le meilleur score si dépassé
+                // TODO: Sauvegarder le _bestScore (localStorage?)
+            }
+            // TODO: Vérifier si le nombre de lignes effacées augmente le niveau.
+            // CheckLevelUp(linesCleared);
+        }
+    }
+
+     /// <summary>Calcul du score basé sur les lignes effacées et le niveau.</summary>
+     private int CalculateScore(int linesCleared, int level)
+     {
+         // Score de base selon le nombre de lignes (valeurs classiques)
+         int baseScore = linesCleared switch
+         {
+             1 => 40,
+             2 => 100,
+             3 => 300,
+             4 => 1200, // Tetris !
+             _ => 0
+         };
+         // Multiplie par le niveau (ou niveau + 1 selon les règles)
+         return baseScore * (level);
+     }
+    /// <summary>
+    /// Détermine le type de bloc à afficher dans la grille de preview (4x4).
+    /// Prend en compte la taille réelle de la pièce suivante (_nextTetrimino.Shape)
+    /// pour éviter les erreurs d'index et afficher la pièce correctement (ici, alignée en haut à gauche).
+    /// </summary>
+    /// <param name="previewGridRow">La ligne dans la grille de preview (0-3).</param>
+    /// <param name="previewGridCol">La colonne dans la grille de preview (0-3).</param>
+    /// <returns>La valeur ushort du bloc de la pièce, ou 0 si la cellule est vide.</returns>
+    private ushort GetPreviewBlockType(int previewGridRow, int previewGridCol)
+    {
+        // Accès sécurisé à la forme
+        var shape = _nextBlocks?.Shape;
+
+        // Si pas de pièce suivante (ne devrait pas arriver en cours de jeu normal)
+        if (shape == null)
+        {
+            return 0; // Retourne un bloc vide
+        }
+        
+        // Récupère les dimensions réelles de la forme de la pièce suivante
+        int shapeRows = shape.GetLength(0);
+        int shapeCols = shape.GetLength(1);
+        
+        // --- Alternative : Logique pour centrer la pièce dans la grille 4x4 ---
+        
+        int rowOffset = (4 - shapeRows) / 2; // Décalage pour centrer verticalement
+        int colOffset = (4 - shapeCols) / 2; // Décalage pour centrer horizontalement
+
+        // Calcule l'index correspondant dans la forme réelle
+        int actualShapeRow = previewGridRow - rowOffset;
+        int actualShapeCol = previewGridCol - colOffset;
+
+        // Vérifie si cet index est valide DANS la forme réelle
+        if (actualShapeRow >= 0 && actualShapeRow < shapeRows && actualShapeCol >= 0 && actualShapeCol < shapeCols)
+        {
+            return shape[actualShapeRow, actualShapeCol]; // Retourne la valeur de la pièce
+        }
+        else
+        {
+            return 0; // Cellule vide en dehors de la pièce centrée
+        }
+        
+    }
+}
