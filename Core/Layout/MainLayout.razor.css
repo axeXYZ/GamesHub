@@ -36,7 +36,6 @@ main {
     display: flex; /* Permet de centrer le conteneur 16/9 */
     justify-content: center; /* Centre horizontalement l'enfant (.aspect-ratio-container) */
     align-items: center; /* Centre verticalement l'enfant (.aspect-ratio-container) */
-    padding: 20px; /* Espace autour de la zone 16/9 */
     box-sizing: border-box;
     flex-shrink: 0; /* Empêche cette zone de rétrécir si le footer est grand */
     /* Note: Pas de hauteur fixe ici (comme 80%). Sa hauteur sera déterminée */

@@ -1,0 +1,84 @@
+﻿@page "/template-layout-bootstrap"
+
+@* ----- CONTENEUR PRINCIPAL ----- *@
+@* Utilise Bootstrap pour remplir l'espace (w-100, h-100) et établir un contexte flex horizontal *@
+<div class="layout-container p-4 w-100 h-100 d-flex">
+
+    @* ----- BARRE LATÉRALE GAUCHE (20%)----- *@
+    @* Classe custom 'left-sidebar' pour sa taille spécifique (définie en CSS) *@
+    @* Utilise Bootstrap pour être un conteneur flex vertical *@
+    <div class="left-sidebar flex-shrink-0 d-flex flex-column p-1 mx-1">
+        @* Conteneur interne pour le contenu de la barre latérale *@
+        <div class="sidebar-content-wrapper flex-grow-1 d-flex flex-column mh-0 p-1">
+            @* Éléments dans la barre latérale *@
+            <div class="sidebar-item flex-grow-1 mh-0 my-1 mt-0 p-1 d-flex align-items-center justify-content-center">Zone Gauche 1</div>
+            <div class="sidebar-item flex-grow-1 mh-0 my-1 p-1 d-flex align-items-center justify-content-center">Zone Gauche 2</div>
+            <div class="sidebar-item flex-grow-1 mh-0 my-1 mb-0 p-1 d-flex align-items-center justify-content-center">Zone Gauche 3</div>
+        </div>
+    </div>
+
+    @* ----- ZONE DE CONTENU PRINCIPAL (60% flexible) ----- *@
+    @* flex-grow-1 pour prendre l'espace central, d-flex pour son enfant *@
+    <div class="main-content-area flex-grow-1 d-flex p-1">
+        @* Conteneur organisant les colonnes internes (10% / 80% / 10%) *@
+        <div class="main-content-columns-wrapper w-100 h-100 d-flex p-1">
+
+            @* Colonne Préfixe (10%) *@
+            <div class="content-prefix-column flex-shrink-0 mw-0 mx-1 ms-0 p-1 d-flex align-items-center justify-content-center">
+                <span class="vertical-text">Préfixe</span>
+            </div>
+
+            @* Colonne Primaire (80% flexible) *@
+            <div class="primary-content-column flex-grow-1 d-flex flex-column mw-0 p-1">
+
+                @* Section d'En-tête (10% Hauteur) *@
+                <div class="header-section flex-shrink-0 p-1 d-flex align-items-center justify-content-center">En-tête</div>
+
+                @* Zone de la Grille (Hauteur flexible) *@
+                @* Classe custom 'game-grid-area' pour définir le grid-template-columns en CSS *@
+                @* Utilise Bootstrap pour 'd-grid', 'gap-1', 'overflow-hidden' *@
+                <div class="game-grid-area flex-grow-1 mh-0 p-1 d-grid gap-1 overflow-hidden">
+                    @for (int row = 0; row < 16; row++)
+                    {
+                        @for (int col = 0; col < 16; col++)
+                        {
+                            var cellKey = $"cell-{row}-{col}";
+                            @* Cellule de la Grille *@
+                            @* Classe custom 'game-cell', utilise Bootstrap pour le ratio carré et le centrage *@
+                            <div class="game-cell ratio ratio-1x1 mw-0 mh-0 d-flex align-items-center justify-content-center text-secondary overflow-hidden" @key="cellKey">
+                                @* R:@row C:@col *@
+                            </div>
+                        }
+                    }
+                </div>
+
+                @* Section Pied de Page (10% Hauteur / 8% Min) *@
+                <div class="footer-section flex-shrink-0 p-1 d-flex align-items-center justify-content-center">Pied de Page</div>
+
+            </div>
+
+            @* Colonne Suffixe (10%) *@
+            <div class="content-suffix-column flex-shrink-0 mw-0 mx-1 me-0 p-1 d-flex align-items-center justify-content-center">
+                <span class="vertical-text">Suffixe</span>
+            </div>
+        </div>
+    </div>
+
+    @* ----- BARRE LATÉRALE DROITE (20%)----- *@
+    @* Classe custom 'right-sidebar' pour sa taille spécifique (définie en CSS) *@
+    @* Utilise Bootstrap pour être un conteneur flex vertical *@
+    <div class="right-sidebar flex-shrink-0 d-flex flex-column p-1 mx-1">
+        @* Conteneur interne pour le contenu de la barre latérale *@
+        <div class="sidebar-content-wrapper flex-grow-1 d-flex flex-column mh-0 p-1">
+            @* Éléments dans la barre latérale *@
+            <div class="sidebar-item flex-grow-1 mh-0 my-1 mt-0 p-1 d-flex align-items-center justify-content-center">Zone Droite 1</div>
+            <div class="sidebar-item flex-grow-1 mh-0 my-1 p-1 d-flex align-items-center justify-content-center">Zone Droite 2</div>
+            <div class="sidebar-item flex-grow-1 mh-0 my-1 mb-0 p-1 d-flex align-items-center justify-content-center">Zone Droite 3</div>
+        </div>
+    </div>
+
+</div>
+
+@code {
+    // Votre code C# ici si nécessaire
+}

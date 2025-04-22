@@ -1,0 +1,87 @@
+﻿/* ----- CONTENEUR PRINCIPAL ----- */
+.layout-container {
+    border: 3px solid darkmagenta;
+    background-color: rgba(255, 0, 0, 0.05); /* Fond léger pour débogage */
+}
+
+/* ----- BARRES LATÉRALES (Gauche et Droite) ----- */
+.left-sidebar,
+.right-sidebar {
+    flex-basis: 20%; /* Définit la largeur spécifique */
+    border: 4px dashed dodgerblue; /* Bordure débogage */
+    background-color: rgba(30, 144, 255, 0.05);
+}
+
+.sidebar-content-wrapper {
+    border: 3px solid darkcyan;
+    background-color: rgba(0, 139, 139, 0.05);
+}
+
+.sidebar-item {
+    border: 1px dotted teal;
+    background-color: rgba(0, 128, 128, 0.05);
+    font-size: 0.9em; /* Taille de texte démo */
+}
+
+/* ----- ZONE DE CONTENU PRINCIPAL ----- */
+.main-content-area {
+    border: 4px solid purple;
+    background-color: rgba(128, 0, 128, 0.05);
+}
+
+.main-content-columns-wrapper {
+    border: 3px dashed magenta;
+    background-color: rgba(255, 0, 255, 0.05);
+}
+
+/* ----- Colonnes Préfixe/Suffixe ----- */
+.content-prefix-column,
+.content-suffix-column {
+    flex-basis: 10%; /* Définit la largeur spécifique */
+    border: 2px solid orangered;
+    background-color: rgba(255, 69, 0, 0.05);
+}
+
+.vertical-text {
+    writing-mode: vertical-rl;
+    text-align: center;
+    margin: auto; /* Centre verticalement dans le conteneur flex */
+    font-size: 0.9em;
+}
+
+/* ----- Colonne Primaire ----- */
+.primary-content-column {
+    border: 2px solid darkgoldenrod;
+    background-color: rgba(184, 134, 11, 0.05);
+}
+
+.header-section {
+    flex-basis: 10%; /* Définit la hauteur spécifique */
+    border: 1px dashed sienna;
+    background-color: rgba(160, 82, 45, 0.05);
+    font-size: 1em;
+}
+
+.game-grid-area {
+    /* La règle CRUCIALE pour la grille 16x16 */
+    grid-template-columns: repeat(16, minmax(0, 1fr));
+    /* Styles débogage */
+    border: 2px solid forestgreen;
+    background-color: rgba(34, 139, 34, 0.05);
+}
+
+.footer-section {
+    height: 10%; /* Hauteur spécifique */
+    min-height: 8%; /* Hauteur minimale spécifique */
+    border: 1px dashed blue;
+    background-color: rgba(0, 0, 255, 0.05);
+    font-size: 1em;
+}
+
+/* ----- Cellule de la Grille ----- */
+.game-cell {
+    /* Pas besoin de définir aspect-ratio ici, car .ratio.ratio-1x1 de Bootstrap le fait */
+    border: 1px solid lightgray;
+    background-color: rgba(211, 211, 211, 0.2); /* Fond léger pour les cellules */
+    font-size: 0.7em; /* Taille démo pour contenu cellule */
+}
