@@ -7,16 +7,25 @@
 @using InputManager  
 @using System.Globalization  
 @using Microsoft.JSInterop
+@using SharedUI.Pages
 @implements IAsyncDisposable      
 @inject IJSRuntime JSRuntime
 @inject NavigationManager NavManager  
 @inject Engine.Services.IGameLoop GameLoop
 @inject InputManager.Services.IInputHandler InputHandler
 
-<div class="Page-layout">
 
+
+
+<div class="page-layout" style="position: relative;">
+    <LoadingOverlay BackgroundImageUrl="_content/SharedUI/images/loading_console_001.jpg"
+                    LoadingText="Loading..."
+                    LoadingDuration="TimeSpan.FromSeconds(3)"
+                    FadeOutDurationSeconds="0.5"
+                    SpinnerColor="#FFA500" >
+                </LoadingOverlay>
     @* Colonne Marge Gauche *@
-    <div class="margin-column"></div>
+    <div class="spacer-column" style="width:100px"></div>
 
     @* Colonne Infos/Contrôles *@
     <div class="info-column">
@@ -49,17 +58,22 @@
     </div>
 
     @* Colonne Espaceur *@
-    <div class="spacer-column" style="width:40px"></div>
+    <div class="spacer-column" style="width:65px"></div>
 
     @* Colonne Aire de Jeu *@
     <div class="game-area-column">
-        <div class="board-game" style="--board-columns: 10;">
-            @* Boucle pour générer le Board (20 lignes x 10 colonnes) *@
-            @for (int row = 0; row < 20; row++)
+        <div class="board-game" style="--board-columns: 16;">
+            @* Boucle pour générer le Board (16 lignes x 16 colonnes) *@
+            @for (int row = 0; row < 16; row++)
             {
-                @for (int col = 0; col < 10; col++)
+                @for (int col = 0; col < 16; col++)
                 {
                     <Block Type="_dataGrid[row, col]" /> @* Utilise le composant Block.razor *@
+
+                    int c = _dataGrid[row, col];
+                    if(c != 0)
+                    {
+                    }
                 }
             }
         </div>
@@ -88,7 +102,7 @@
     private int _currentScore = 0;
     private int _bestScore = 0; // TODO: Charger/Sauvegarder le meilleur score
     private int _currentLevel = 1; // TODO: Gérer la montée de niveau
-    private ushort[,] _dataGrid = new ushort[20, 10]; // Grille de jeu [ligne, colonne]
+    private ushort[,] _dataGrid = new ushort[18, 16]; // Grille de jeu [ligne, colonne]
 
     // --- Variables de Contrôle ---
     private float _gameSpeed = 1.0f; // Mettez ici le temps désiré en secondes

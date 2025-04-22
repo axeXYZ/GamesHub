@@ -1,0 +1,250 @@
+﻿/* --- Styles Globaux --- */
+* { /* Appliquer box-sizing globalement est souvent une bonne pratique */
+    box-sizing: border-box;
+}
+
+/* --- Conteneur Racine du Jeu --- */
+.game-view { /* Élément racine du composant RCL */
+    /* S'adapte au parent (.body-content-host) sans le dépasser */
+
+
+    /* Laisser le navigateur déterminer la taille exacte basée sur le ratio */
+    /* et les contraintes max-. width/height:auto est implicite */
+    width: 100%;
+    /* height: auto; */
+    /* Optionnel: Centrage au cas où il serait plus petit que son hôte */
+    /* (Normalement max-width/height le font remplir au max) */
+    /* --- Layout Interne --- */
+    display: flex; /* Si requis pour .flexbox-1/2/3 */
+    /* --- Débogage --- */
+    border: 3px solid darkmagenta;
+    background-color: rgba(255, 100, 100, 0.3);
+}
+
+/* --- Division Principale Horizontale (20% / 60% / 20%) --- */
+.flexbox-1,
+.flexbox-3 {
+    flex: 0 0 20%; /* IMPORTANT: grow 0, shrink 0, basis 20% */
+    min-width: 0; /* IMPORTANT: Pour respecter le flex-basis */
+    display: flex; /* Pour contenir .verticale-flexbox-* */
+    flex-direction: column;
+    border: 4px dashed dodgerblue; /* #2 Bordure latérale */
+    padding: 4px;
+    margin: 0 4px;
+}
+
+.flexbox-2 {
+    flex: 0 0 60%; /* IMPORTANT: grow 0, shrink 0, basis 60% */
+    min-width: 0; /* IMPORTANT: Pour respecter le flex-basis */
+    display: flex; /* Pour contenir .horizontale-flexbox-2-1 */
+    border: 4px solid purple; /* #3 Bordure centrale */
+    padding: 4px;
+}
+
+/* Ajustement marges externes */
+.game-view > .flexbox-1 {
+    margin-left: 0;
+}
+
+.game-view > .flexbox-3 {
+    margin-right: 0;
+}
+
+/* --- Contenu des colonnes latérales --- */
+.verticale-flexbox-1, /* Nouveau nom */
+.verticale-flexbox-2 { /* Nouveau nom */
+    flex-grow: 1; /* Prend toute la hauteur */
+    min-height: 0; /* Important pour flex */
+    display: flex;
+    flex-direction: column;
+    border: 3px solid darkcyan; /* #4 Bordure interne latérale */
+    padding: 3px;
+    background-color: rgba(0, 139, 139, 0.1);
+}
+
+.child-1, .child-2, .child-3, /* Nouveaux noms */
+.child-4, .child-5, .child-6 { /* Nouveaux noms */
+    flex-grow: 1;
+    flex-basis: 0;
+    min-height: 0; /* Important pour flex */
+    border: 1px dotted teal; /* #5 Bordure enfants latéraux */
+    margin: 2px 0;
+    padding: 3px;
+    background-color: rgba(0, 128, 128, 0.1);
+    /* Centrage démo */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2vh;
+}
+/* Ajustement marges enfants */
+.verticale-flexbox-1 > :first-child,
+.verticale-flexbox-2 > :first-child {
+    margin-top: 0;
+}
+
+.verticale-flexbox-1 > :last-child,
+.verticale-flexbox-2 > :last-child {
+    margin-bottom: 0;
+}
+
+
+/* --- Contenu Colonne Centrale --- */
+.horizontale-flexbox-2-1 {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    border: 3px dashed magenta; /* #6 Bordure conteneur interne central */
+    padding: 3px;
+    background-color: rgba(255, 0, 255, 0.1);
+}
+
+/* --- Division interne Horizontale (10% / 80% / 10%) --- */
+.column-1,
+.column-3 {
+    flex: 0 0 10%;
+    min-width: 0;
+    border: 2px solid orangered; /* #7 Bordure colonnes 10% */
+    margin: 0 3px;
+    padding: 3px;
+    background-color: rgba(255, 69, 0, 0.1);
+}
+
+.column-2 {
+    flex: 0 0 80%;
+    min-width: 0;
+    display: flex;
+    flex-direction: column; /* Organise top, grid, bottom */
+    border: 2px solid darkgoldenrod; /* #8 Bordure colonne 80% */
+    padding: 3px;
+    background-color: rgba(184, 134, 11, 0.1);
+}
+/* Ajustement marges */
+.horizontale-flexbox-2-1 > .column-1 {
+    margin-left: 0;
+}
+
+.horizontale-flexbox-2-1 > .column-3 {
+    margin-right: 0;
+}
+
+
+/* --- Division Verticale (10% / 80% / 10%) dans Column 2 --- */
+.top-10 {
+    flex: 0 0 10%; /* Garde sa hauteur de 10% du parent (.column-2) */
+    border: 1px dashed sienna; /* #9 */
+    padding: 3px;
+    background-color: rgba(160, 82, 45, 0.1);
+}
+
+.bottom-10 {
+    /* Ne grandit/rétrécit pas par défaut, hauteur basée sur 'height' ou 'min-height' */
+    flex: 0 0 auto;
+    height: 10%; /* Tente d'avoir 10% de la hauteur de .column-2 */
+    min-height: 8%; /* Mais ne sera JAMAIS plus petit que 8% de .column-2 */
+    /* Note: % min-height nécessite que .column-2 ait une hauteur déterminée, ce qui est le cas */
+    border: 1px dashed blue; /* #12 */
+    padding: 3px;
+    background-color: rgba(0, 0, 255, 0.1);
+}
+
+.grid-columns-80 {
+    flex: 1 1 auto; /* Prend l'espace restant (grow 1), peut rétrécir (shrink 1), base auto */
+    min-height: 0; /* Permet de rétrécir au delà de la taille du contenu si nécessaire */
+    border: 2px solid forestgreen; /* #10 */
+    padding: 2px;
+    background-color: rgba(34, 139, 34, 0.1);
+    /* --- Configuration Grid --- */
+    display: grid;
+    grid-template-columns: repeat(16, minmax(0, 1fr));
+    gap: 1px;
+    align-content: start;
+    justify-content: start; /* Alignement si les colonnes ne remplissent pas */
+    /* --- Gestion du dépassement --- */
+    overflow: hidden; /* COUPE le contenu de la grille si plus haut que cet espace */
+}
+
+/* Ajustement marges */
+.column-2 > .top-10 {
+    margin-top: 0;
+}
+
+.column-2 > .bottom-10 {
+    margin-bottom: 0;
+}
+
+
+/* --- Style pour les Cellules dans la grille --- */
+.cell {
+    aspect-ratio: 1 / 1; /* Garde les cellules carrées */
+    min-width: 0;
+    min-height: 0;
+    border: 1px solid lightgray; /* #11 */
+    background-color: rgba(128, 128, 128, 0.3);
+    /* ... styles démo ... */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.6vh;
+    overflow: hidden;
+    color: #555;
+}
+/* Optionnel: contenu démo pour cellule */
+/* .cell::before { content: 'c'; } */
+
+/* Optionnel : Contenu démo pour les autres zones */
+.child-1::before {
+    content: '1 (20%)';
+}
+
+.child-2::before {
+    content: '2';
+}
+
+.child-3::before {
+    content: '3';
+}
+
+.child-4::before {
+    content: '4 (20%)';
+}
+
+.child-5::before {
+    content: '5';
+}
+
+.child-6::before {
+    content: '6';
+}
+
+.column-1::before {
+    content: 'C1(10%)';
+    writing-mode: vertical-rl;
+    text-align: center;
+    margin: auto;
+    font-size: 1.2vh;
+}
+
+.column-3::before {
+    content: 'C3(10%)';
+    writing-mode: vertical-rl;
+    text-align: center;
+    margin: auto;
+    font-size: 1.2vh;
+}
+
+.top-10::before {
+    content: 'Top 10%';
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5vh;
+}
+
+.bottom-10::before {
+    content: 'Bottom 10%';
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5vh;
+}

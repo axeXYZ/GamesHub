@@ -1,0 +1,9 @@
+﻿
+
+.cell-layout {
+    width: 40px;
+    height: 40px;
+    border: 5px solid #ccc; /* Bordure de la cellule */
+    border-radius: inherit;
+    background-color: #f0f0f0; /* Couleur de fond par défaut */
+}

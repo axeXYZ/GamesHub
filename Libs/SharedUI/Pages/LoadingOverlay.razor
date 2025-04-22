@@ -1,0 +1,96 @@
+﻿@implements IDisposable
+
+@* Affiche l'overlay seulement s'il est visible *@
+@if (_isVisible)
+{
+    <div class="loading-overlay @(_isFadingOut ? "fading-out" : "")"
+         style="background-image: url('@BackgroundImageUrl'); z-index: @ZIndex;">
+
+        <div class="loading-content">
+            @if (!string.IsNullOrWhiteSpace(LoadingText))
+            {
+                <p class="loading-text">@LoadingText</p>
+            }
+            <div class="spinner" style="border-top-color: @SpinnerColor;"></div>
+        </div>
+    </div>
+}
+
+@code {
+    /// <summary>
+    /// URL de l'image de fond pour l'écran de chargement.
+    /// Requis. Utiliser les chemins _content/... ou relatifs standards.
+    /// </summary>
+    [Parameter, EditorRequired] public string BackgroundImageUrl { get; set; } = default!;
+
+    /// <summary>
+    /// Durée pendant laquelle l'overlay reste visible avant de commencer à disparaître.
+    /// </summary>
+    [Parameter] public TimeSpan LoadingDuration { get; set; } = TimeSpan.FromSeconds(2.5);
+
+    /// <summary>
+    /// Durée de l'animation de fondu sortant (fade-out) en secondes.
+    /// Doit correspondre à la durée de transition dans le CSS.
+    /// </summary>
+    [Parameter] public double FadeOutDurationSeconds { get; set; } = 0.5;
+
+    /// <summary>
+    /// Texte optionnel à afficher sous le spinner.
+    /// </summary>
+    [Parameter] public string? LoadingText { get; set; }
+
+    /// <summary>
+    /// Couleur de la partie visible du spinner (format CSS valide, ex: "white", "#FF0000").
+    /// </summary>
+    [Parameter] public string SpinnerColor { get; set; } = "white";
+
+    /// <summary>
+    /// Le z-index CSS pour s'assurer que l'overlay est au-dessus des autres contenus.
+    /// </summary>
+    [Parameter] public int ZIndex { get; set; } = 9999;
+
+    private bool _isVisible = true;
+    private bool _isFadingOut = false;
+    private CancellationTokenSource? _cts; // Pour annuler les délais si le composant est détruit
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _cts = new CancellationTokenSource();
+            try
+            {
+                // Attend la durée de chargement principale
+                await Task.Delay(LoadingDuration, _cts.Token);
+
+                // Déclenche le fondu sortant
+                _isFadingOut = true;
+                StateHasChanged(); // Applique la classe .fading-out
+
+                // Attend la durée du fondu sortant
+                await Task.Delay(TimeSpan.FromSeconds(FadeOutDurationSeconds), _cts.Token);
+
+                // Cache complètement l'overlay
+                _isVisible = false;
+                StateHasChanged(); // Enlève l'élément du DOM
+            }
+            catch (TaskCanceledException)
+            {
+                // Le délai a été annulé (le composant a été détruit), c'est normal
+                Console.WriteLine("LoadingOverlay delays cancelled.");
+            }
+            finally
+            {
+                _cts?.Dispose(); // Nettoie le CancellationTokenSource
+                _cts = null;
+            }
+        }
+    }
+
+    // Implémente IDisposable pour annuler les tâches si le composant est retiré prématurément
+    public void Dispose()
+    {
+        _cts?.Cancel(); // Annule les Task.Delay en cours
+        _cts?.Dispose(); // Libère les ressources du CancellationTokenSource
+    }
+}

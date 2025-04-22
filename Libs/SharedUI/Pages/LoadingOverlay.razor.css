@@ -1,0 +1,68 @@
+﻿/* SharedUI/Components/LoadingOverlay.razor.css */
+.loading-overlay {
+    position: absolute; /* <<< CHANGEMENT ICI (était fixed) */
+    top: 0; /* Reste à 0 pour commencer en haut du parent */
+    left: 0; /* Reste à 0 pour commencer à gauche du parent */
+    width: 100%; /* Prend 100% de la largeur DU PARENT */
+    height: 100%; /* Prend 100% de la hauteur DU PARENT */
+    background-size: cover;
+    background-position: center center;
+    background-repeat: no-repeat;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 1;
+    visibility: visible;
+    /* z-index pour être au-dessus du contenu DANS le même conteneur */
+    z-index: var(--z-index, 10); /* On peut utiliser une variable liée au paramètre ou juste une valeur fixe plus basse */
+    transition: opacity var(--fade-out-duration, 0.5s) ease-out, visibility var(--fade-out-duration, 0.5s) ease-out;
+}
+
+    .loading-overlay.fading-out {
+        opacity: 0;
+        visibility: hidden;
+    }
+
+.loading-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 20px;
+    /* background-color: rgba(0, 0, 0, 0.3); */ /* Optionnel */
+    /* border-radius: 10px; */ /* Optionnel */
+    /* === AJOUTER CECI pour décaler vers le bas === */
+    transform: translateY(225px); /* Ajustez cette valeur selon le décalage désiré */
+    /* Vous pouvez utiliser différentes unités : */
+    /* transform: translateY(10vh); */ /* 10% de la hauteur de la fenêtre */
+    /* transform: translateY(5rem); */ /* 5 fois la taille de police racine */
+    /* =========================================== */
+}
+
+.spinner {
+    width: 100px; /* Taille du spinner */
+    height: 100px;
+    border: 15px solid transparent; /* Bordure transparente */
+    border-top-color: white; /* Couleur par défaut, surchargée par le paramètre */
+    border-radius: 50%; /* Cercle parfait */
+    animation: loading-overlay-spin 1s linear infinite; /* Animation de rotation */
+    margin-bottom: 15px;
+}
+
+.loading-text {
+    color: white; /* Couleur du texte */
+    font-size: 2.0em;
+    margin: 0;
+    /* Optionnel: ombre pour améliorer lisibilité sur fonds variés */
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
+}
+
+@keyframes loading-overlay-spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}

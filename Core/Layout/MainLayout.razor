@@ -1,15 +1,33 @@
 ﻿@inherits LayoutComponentBase
-
-<div class="page">
-    <div class="sidebar">
-        <NavMenu />
-    </div>
-
-    <main>
+@using SharedUI.Pages
 
 
-        <article class="content px-4">
-            @Body
-        </article>
+<div class="page-container">  @* Conteneur global flex horizontal *@
+
+    <aside class="sidebar">  @* Utilisation de <aside> sémantique *@
+        <NavMenu /> @* NavMenu doit gérer sa propre largeur/style interne *@
+    </aside>
+
+    <main class="main-content"> @* Zone principale flex vertical, prend le reste de la largeur, scrollable *@
+
+        <section class="body-viewport"> @* Zone qui fait 80vh et centre le contenu 16/9 *@
+            <div class="aspect-ratio-container ">
+                @* Le conteneur qui force le 16/9 *@
+                @Body @* Votre contenu de jeu ici *@
+            </div>
+        </section>
+
+        <footer class="footer-area"> @* Le pied de page *@
+            @* Mettez ici le contenu de votre footer *@
+            <p>Contenu du pied de page.</p>
+            <p>Peut contenir beaucoup de texte pour tester le scroll...</p>
+            <p>Ligne 1</p>
+            <p>Ligne 2</p>
+            <p>Ligne 3</p>
+            <p>Ligne 4</p>
+            <p>Ligne 5</p>
+        </footer>
+
     </main>
+
 </div>

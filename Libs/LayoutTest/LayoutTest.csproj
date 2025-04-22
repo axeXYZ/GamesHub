@@ -12,13 +12,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="9.0.3" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="9.0.2" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Engine\Engine.csproj" />
-    <ProjectReference Include="..\InputHandler\InputManager.csproj" />
-    <ProjectReference Include="..\SharedUI\SharedUI.csproj" />
+    <Folder Include="wwwroot\" />
   </ItemGroup>
 
 </Project>

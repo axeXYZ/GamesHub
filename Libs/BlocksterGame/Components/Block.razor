@@ -4,11 +4,18 @@
 @using System.Text.RegularExpressions
 
 @* Le composant reçoit sont TYPE(0-7) comme paramètres *@
-<div class="block type-@Type">
+<div class="block">
     @* Plus besoin de contenu ou de style inline ici *@
+    <img src="@BrickImagePath" style="width: 40px; height: 40px" />
 </div>
 
 @code {
+    // Créer une seule instance statique de Random pour éviter les problèmes de seed
+    private static Random _random = new Random();
+    /// <summary>
+    /// Chemin vers l'image de brique à afficher.
+    /// </summary>
+    private string BrickImagePath { get; set; } = string.Empty; // Initialiser à vide
 
     /// <summary>
     /// Reçoit le type de bloc (0-7), utilisé pour déterminer la classe CSS.
@@ -16,5 +23,45 @@
     /// </summary>
     [Parameter]
     public ushort Type { get; set; } = 0; // Valeur par défaut (type 0 = vide/gris)
+
+    /// <summary>
+    /// Appelé une fois lorsque le composant est initialisé.
+    /// </summary>
+    protected override void OnInitialized()
+    {
+        // Définir le chemin de l'image aléatoire une seule fois lors de l'initialisation
+        BrickImagePath = GetRandomBrickPath();
+    }
+
+    /// <summary>
+    /// Retourne le chemin d'une image de brique aléatoire.
+    /// </summary>
+    /// <returns>Le chemin relatif de l'image.</returns>
+    private string GetRandomBrickPath()
+    {
+        // Utiliser Next(0, 4) pour obtenir une valeur parmi 0, 1, 2, 3
+        // Utiliser l'instance statique _random
+        int r = _random.Next(0, 4);
+
+        switch (r)
+        {
+            case 0:
+                return "_content/BlocksterGame/images/rock_block_001.svg";
+            case 1:                                             
+                return "_content/BlocksterGame/images/rock_block_001.svg";
+            case 2:                                             
+                return "_content/BlocksterGame/images/rock_block_002.svg";
+            case 3:                                             
+                return "_content/BlocksterGame/images/rock_block_003.svg";
+            case 4:                                             
+                return "_content/BlocksterGame/images/rock_block_004.svg";
+            default:
+                // Ce cas ne devrait théoriquement jamais arriver avec Next(0, 4)
+                // Retourner une image par défaut ou lancer une exception plus générique
+                // throw new InvalidOperationException("Erreur inattendue lors de la génération du nombre aléatoire.");
+                // Ou retourner une image par défaut si possible:
+                return "_content/BlocksterGame/images/rock_block_001.png"; // Assurez-vous que cette image existe
+        }
+    }
 
 }

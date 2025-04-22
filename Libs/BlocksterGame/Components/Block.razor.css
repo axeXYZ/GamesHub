@@ -3,8 +3,8 @@
 /* La classe correspond à celle utilisée dans Block.razor */
 .block {
     /* --- Paramètres Fixes --- */
-    width: 30px; /* Largeur fixe */
-    height: 30px; /* Hauteur fixe */
+    width: 40px; /* Largeur fixe */
+    height: 40px; /* Hauteur fixe */
     box-sizing: border-box;
 }
     .block.type-10 { /* Type Empty */
