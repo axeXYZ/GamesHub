@@ -6,14 +6,10 @@
 /* --- Conteneur Racine du Jeu --- */
 .game-view { /* Élément racine du composant RCL */
     /* S'adapte au parent (.body-content-host) sans le dépasser */
-
-
     /* Laisser le navigateur déterminer la taille exacte basée sur le ratio */
     /* et les contraintes max-. width/height:auto est implicite */
     width: 100%;
-    /* height: auto; */
-    /* Optionnel: Centrage au cas où il serait plus petit que son hôte */
-    /* (Normalement max-width/height le font remplir au max) */
+    height: 100%; /* <<< AJOUTEZ CETTE LIGNE ESSENTIELLE */
     /* --- Layout Interne --- */
     display: flex; /* Si requis pour .flexbox-1/2/3 */
     /* --- Débogage --- */

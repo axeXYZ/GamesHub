@@ -1,5 +1,4 @@
 ﻿@inherits LayoutComponentBase
-@using SharedUI.Pages
 
 
 <div class="page-container">  @* Conteneur global flex horizontal *@
@@ -8,9 +7,9 @@
         <NavMenu /> @* NavMenu doit gérer sa propre largeur/style interne *@
     </aside>
 
-    <main class="main-content"> @* Zone principale flex vertical, prend le reste de la largeur, scrollable *@
+    <main> @* Zone principale flex vertical, prend le reste de la largeur, scrollable *@
 
-        <section class="body-viewport"> @* Zone qui fait 80vh et centre le contenu 16/9 *@
+        <section class="game-content"> @* Zone qui fait 80vh et centre le contenu 16/9 *@
             <div class="aspect-ratio-container ">
                 @* Le conteneur qui force le 16/9 *@
                 @Body @* Votre contenu de jeu ici *@
