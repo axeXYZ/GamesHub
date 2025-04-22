@@ -20,7 +20,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Libs\BlocksterGame\BlocksterGame.csproj" />
-    <ProjectReference Include="..\Libs\LayoutTest\LayoutTest.csproj" />
+    <ProjectReference Include="..\Libs\TemplateLayout\TemplateLayout.csproj" />
     <ProjectReference Include="..\Libs\SharedUI\SharedUI.csproj" />
   </ItemGroup>
 

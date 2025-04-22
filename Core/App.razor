@@ -1,8 +1,13 @@
 ﻿@using BlocksterGame;
+@using TemplateLayout;
 @inject InputManager.Services.IInputHandler InputHandler
 
 <Router AppAssembly="@typeof(App).Assembly"
-        AdditionalAssemblies="new[] { typeof(BlocksterCoreMaker).Assembly }">
+        AdditionalAssemblies="new[] 
+{ 
+    typeof(BlocksterCoreMaker).Assembly, 
+    typeof(TemplateLayoutCoreMaker).Assembly 
+}">
     <Found Context="routeData">
         <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)" />
         <FocusOnNavigate RouteData="@routeData" Selector="h1" />
